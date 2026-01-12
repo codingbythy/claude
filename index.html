@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Turn-Based Strategy Game</title>
+    <title>TACTICAL DUEL</title>
     <style>
         * {
             margin: 0;
@@ -12,89 +12,246 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             padding: 20px;
+            color: #fff;
         }
 
         h1 {
-            color: #eee;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-        }
-
-        .game-info {
-            color: #fff;
-            font-size: 1.2rem;
+            color: #ddd;
             margin-bottom: 20px;
-            padding: 10px 20px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 8px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            font-size: 2.5rem;
+            letter-spacing: 4px;
+            text-align: center;
         }
 
-        .current-turn {
+        .game-container {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+        }
+
+        .left-panel, .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .player-info {
+            background: rgba(0,0,0,0.6);
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid rgba(255,255,255,0.1);
+            min-width: 200px;
+        }
+
+        .player-name {
+            font-size: 1.2rem;
             font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
         }
 
-        .ukraine-turn {
+        .ukraine-color { color: #ffd700; }
+        .russia-color { color: #ff6b6b; }
+
+        .hp-container {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .hp-bar {
+            width: 30px;
+            height: 40px;
+            background: #d32f2f;
+            border-radius: 5px;
+            border: 2px solid #fff;
+            box-shadow: 0 0 10px rgba(211, 47, 47, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .hp-bar.lost {
+            background: #333;
+            border-color: #555;
+            box-shadow: none;
+        }
+
+        .defense-token {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 2rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .defense-token.active {
+            opacity: 1;
+            animation: shield-pulse 2s infinite;
+        }
+
+        @keyframes shield-pulse {
+            0%, 100% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.1); filter: brightness(1.3); }
+        }
+
+        .turn-indicator {
+            background: rgba(0,0,0,0.8);
+            padding: 15px 30px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.3rem;
+            font-weight: bold;
+            border: 2px solid;
+            animation: turn-glow 1.5s infinite;
+        }
+
+        .turn-indicator.ukraine-turn {
+            border-color: #ffd700;
             color: #ffd700;
         }
 
-        .russia-turn {
+        .turn-indicator.russia-turn {
+            border-color: #ff6b6b;
             color: #ff6b6b;
         }
 
-        .board-container {
-            background: #2d2d2d;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        @keyframes turn-glow {
+            0%, 100% { box-shadow: 0 0 20px currentColor; }
+            50% { box-shadow: 0 0 40px currentColor; }
         }
 
-        .board {
-            display: grid;
-            grid-template-columns: repeat(8, 70px);
-            grid-template-rows: repeat(8, 70px);
+        .timer-container {
+            background: rgba(0,0,0,0.6);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .timer-label {
+            font-size: 0.9rem;
+            color: #aaa;
+            margin-bottom: 10px;
+        }
+
+        .timer-display {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #4caf50;
+            transition: color 0.3s ease;
+        }
+
+        .timer-display.warning {
+            color: #ff9800;
+            animation: timer-pulse 0.5s infinite;
+        }
+
+        .timer-display.danger {
+            color: #f44336;
+            animation: timer-pulse 0.3s infinite;
+        }
+
+        @keyframes timer-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .board-container {
+            background: #3d2817;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow:
+                0 20px 60px rgba(0,0,0,0.8),
+                inset 0 0 50px rgba(0,0,0,0.5);
+            border: 5px solid #654321;
+        }
+
+        .coordinates {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 5px;
+            padding: 0 5px;
+        }
+
+        .coord-label {
+            width: 60px;
+            text-align: center;
+            color: #d4af37;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .board-row {
+            display: flex;
             gap: 2px;
-            background: #1a1a1a;
-            padding: 2px;
-            border-radius: 5px;
+        }
+
+        .row-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            color: #d4af37;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .board-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .board-cells {
+            display: flex;
+            gap: 2px;
         }
 
         .cell {
-            width: 70px;
-            height: 70px;
+            width: 60px;
+            height: 60px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             transition: all 0.2s ease;
             position: relative;
+            border: 2px solid transparent;
         }
 
         .cell.light {
-            background: #b7c4cf;
+            background: #c9a961;
         }
 
         .cell.dark {
-            background: #5c6b73;
+            background: #8b6f47;
         }
 
-        .cell:hover {
+        .cell.center-zone {
+            background: radial-gradient(circle, rgba(255,215,0,0.3) 0%, transparent 70%);
+            box-shadow: inset 0 0 20px rgba(255,215,0,0.2);
+        }
+
+        .cell.light.center-zone { background-color: #d4b976; }
+        .cell.dark.center-zone { background-color: #9d7f57; }
+
+        .cell:hover:not(.has-unit) {
             filter: brightness(1.2);
-        }
-
-        .cell.selected {
-            box-shadow: inset 0 0 0 4px #00ff00;
+            border-color: rgba(255,255,255,0.3);
         }
 
         .cell.valid-move {
-            box-shadow: inset 0 0 0 4px rgba(0, 255, 0, 0.5);
+            border-color: #4caf50;
+            box-shadow: inset 0 0 10px rgba(76, 175, 80, 0.5);
         }
 
         .cell.valid-move::after {
@@ -102,21 +259,47 @@
             position: absolute;
             width: 20px;
             height: 20px;
-            background: rgba(0, 255, 0, 0.4);
+            background: rgba(76, 175, 80, 0.6);
             border-radius: 50%;
+            animation: move-indicator 1s infinite;
         }
 
-        /* Soldier piece styling */
+        @keyframes move-indicator {
+            0%, 100% { transform: scale(1); opacity: 0.6; }
+            50% { transform: scale(1.3); opacity: 1; }
+        }
+
+        .cell.in-attack-range {
+            border-color: #f44336;
+            box-shadow: inset 0 0 10px rgba(244, 67, 54, 0.5);
+        }
+
+        .cell.in-attack-range::before {
+            content: '⚠';
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            font-size: 0.8rem;
+            color: #f44336;
+        }
+
+        /* Soldier styling */
         .soldier {
-            width: 55px;
-            height: 55px;
+            width: 45px;
+            height: 50px;
             position: relative;
-            cursor: grab;
+            cursor: pointer;
             transition: transform 0.2s ease;
+            animation: soldier-idle 3s infinite ease-in-out;
+        }
+
+        @keyframes soldier-idle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-2px); }
         }
 
         .soldier:hover {
-            transform: scale(1.1);
+            transform: scale(1.1) !important;
         }
 
         .soldier-body {
@@ -128,7 +311,7 @@
             box-shadow:
                 inset -5px -5px 15px rgba(0,0,0,0.4),
                 inset 5px 5px 15px rgba(255,255,255,0.1),
-                0 4px 8px rgba(0,0,0,0.3);
+                0 4px 8px rgba(0,0,0,0.5);
             border: 2px solid #1a3d18;
         }
 
@@ -139,8 +322,8 @@
             top: -5px;
             left: 50%;
             transform: translateX(-50%);
-            width: 35px;
-            height: 20px;
+            width: 30px;
+            height: 18px;
             background: #3d7a35;
             border-radius: 50% 50% 30% 30%;
             box-shadow:
@@ -149,252 +332,534 @@
             border: 1px solid #2d5a27;
         }
 
-        /* Flag on chest */
-        .flag {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 24px;
-            height: 16px;
-            border-radius: 2px;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-        }
-
-        /* Ukraine flag */
-        .ukraine .flag {
-            background: linear-gradient(
-                to bottom,
-                #005bbb 0%,
-                #005bbb 50%,
-                #ffd500 50%,
-                #ffd500 100%
-            );
-        }
-
-        /* Russia flag */
-        .russia .flag {
-            background: linear-gradient(
-                to bottom,
-                #fff 0%,
-                #fff 33.33%,
-                #0039a6 33.33%,
-                #0039a6 66.66%,
-                #d52b1e 66.66%,
-                #d52b1e 100%
-            );
-        }
-
-        /* Rifle on back */
+        /* Rifle */
         .soldier-body::after {
             content: '';
             position: absolute;
-            top: 5px;
+            top: 8px;
             right: -8px;
-            width: 6px;
-            height: 40px;
+            width: 5px;
+            height: 35px;
             background: linear-gradient(to bottom, #4a4a4a, #2a2a2a);
             border-radius: 2px;
             transform: rotate(-15deg);
             box-shadow: 1px 1px 3px rgba(0,0,0,0.4);
         }
 
-        .controls {
-            margin-top: 20px;
-            display: flex;
-            gap: 15px;
+        .flag {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 13px;
+            border-radius: 2px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.5);
         }
 
-        button {
-            padding: 12px 24px;
+        .ukraine .flag {
+            background: linear-gradient(
+                to bottom,
+                #005bbb 0%, #005bbb 50%,
+                #ffd500 50%, #ffd500 100%
+            );
+        }
+
+        .russia .flag {
+            background: linear-gradient(
+                to bottom,
+                #fff 0%, #fff 33.33%,
+                #0039a6 33.33%, #0039a6 66.66%,
+                #d52b1e 66.66%, #d52b1e 100%
+            );
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .action-btn {
+            padding: 15px 25px;
             font-size: 1rem;
+            font-weight: bold;
             border: none;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s ease;
-            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .attack-btn {
+            background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
+            color: white;
+            border: 2px solid #f44336;
+        }
+
+        .attack-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(211, 47, 47, 0.5);
+        }
+
+        .fortify-btn {
+            background: linear-gradient(135deg, #1976d2 0%, #0d47a1 100%);
+            color: white;
+            border: 2px solid #2196f3;
+        }
+
+        .fortify-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(25, 118, 210, 0.5);
+        }
+
+        .end-turn-btn {
+            background: linear-gradient(135deg, #f57c00 0%, #e65100 100%);
+            color: white;
+            border: 2px solid #ff9800;
+        }
+
+        .end-turn-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(245, 124, 0, 0.5);
         }
 
         .reset-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #616161 0%, #424242 100%);
             color: white;
+            border: 2px solid #757575;
+            margin-top: 10px;
         }
 
         .reset-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 5px 20px rgba(97, 97, 97, 0.5);
         }
 
-        .winner-overlay {
+        .turn-counter {
+            background: rgba(0,0,0,0.6);
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid rgba(255,255,255,0.1);
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        .turn-counter.sudden-death {
+            border-color: #f44336;
+            color: #f44336;
+            animation: sudden-death-pulse 1s infinite;
+        }
+
+        @keyframes sudden-death-pulse {
+            0%, 100% { background: rgba(244, 67, 54, 0.2); }
+            50% { background: rgba(244, 67, 54, 0.4); }
+        }
+
+        /* Victory Overlay */
+        .victory-overlay {
             display: none;
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.95);
             align-items: center;
             justify-content: center;
-            z-index: 100;
+            z-index: 1000;
+            animation: overlay-fade-in 0.5s ease;
         }
 
-        .winner-overlay.show {
+        .victory-overlay.show {
             display: flex;
         }
 
-        .winner-message {
+        @keyframes overlay-fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .victory-message {
             background: linear-gradient(135deg, #1a1a2e, #16213e);
-            padding: 40px 60px;
+            padding: 50px 70px;
             border-radius: 20px;
             text-align: center;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-            border: 2px solid rgba(255,255,255,0.1);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+            border: 3px solid;
+            animation: victory-zoom 0.5s ease;
         }
 
-        .winner-message h2 {
-            color: #ffd700;
-            font-size: 2.5rem;
+        @keyframes victory-zoom {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .victory-message.ukraine-victory {
+            border-color: #ffd700;
+        }
+
+        .victory-message.russia-victory {
+            border-color: #ff6b6b;
+        }
+
+        .victory-message h2 {
+            font-size: 3rem;
             margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
         }
 
-        .winner-message p {
+        .victory-message p {
             color: #ccc;
-            font-size: 1.2rem;
-            margin-bottom: 25px;
+            font-size: 1.3rem;
+            margin-bottom: 30px;
+        }
+
+        /* Attack animation */
+        .attack-flash {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,0,0,0.8) 0%, transparent 70%);
+            pointer-events: none;
+            opacity: 0;
+            animation: attack-flash-anim 0.6s ease;
+        }
+
+        @keyframes attack-flash-anim {
+            0% { opacity: 0; transform: scale(0.5); }
+            30% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(1.5); }
+        }
+
+        /* Movement path preview */
+        .path-preview {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: rgba(76, 175, 80, 0.3);
+            border: 2px dashed #4caf50;
+            pointer-events: none;
         }
 
         .instructions {
             color: #aaa;
-            margin-top: 20px;
+            margin-top: 30px;
             text-align: center;
-            max-width: 500px;
-            line-height: 1.6;
+            max-width: 800px;
+            line-height: 1.8;
+            font-size: 0.9rem;
         }
 
         .instructions h3 {
             color: #ddd;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
         }
 
-        /* Flying planes decoration */
-        .plane-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            overflow: hidden;
-            z-index: 1;
+        @media (max-width: 1200px) {
+            .game-container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .left-panel, .right-panel {
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
         }
 
-        .plane {
+        /* Damage number animation */
+        .damage-number {
             position: absolute;
-            font-size: 20px;
-            opacity: 0.4;
-            filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.3));
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #f44336;
+            font-size: 2rem;
+            font-weight: bold;
+            pointer-events: none;
+            animation: damage-float 1s ease forwards;
         }
 
-        .plane.left-to-right {
-            animation: flyLeftToRight 4s linear forwards;
-        }
-
-        .plane.right-to-left {
-            animation: flyRightToLeft 4s linear forwards;
-            transform: scaleX(-1);
-        }
-
-        @keyframes flyLeftToRight {
-            0% {
-                left: -50px;
-            }
-            100% {
-                left: calc(100% + 50px);
-            }
-        }
-
-        @keyframes flyRightToLeft {
-            0% {
-                left: calc(100% + 50px);
-            }
-            100% {
-                left: -50px;
-            }
+        @keyframes damage-float {
+            0% { opacity: 1; transform: translate(-50%, -50%); }
+            100% { opacity: 0; transform: translate(-50%, -150%); }
         }
     </style>
 </head>
 <body>
-    <!-- Flying planes container -->
-    <div class="plane-container" id="planeContainer"></div>
+    <h1>⚔ TACTICAL DUEL ⚔</h1>
 
-    <h1>⚔️ Turn-Based Strategy Game ⚔️</h1>
+    <div class="game-container">
+        <!-- Left Panel -->
+        <div class="left-panel">
+            <!-- Ukraine Player Info -->
+            <div class="player-info">
+                <div class="player-name ukraine-color">UKRAINE</div>
+                <div class="hp-container" id="ukraineHP">
+                    <div class="hp-bar"></div>
+                    <div class="hp-bar"></div>
+                    <div class="hp-bar"></div>
+                </div>
+                <div class="defense-token" id="ukraineDefense">🛡️</div>
+            </div>
 
-    <div class="game-info">
-        <span class="current-turn ukraine-turn" id="turnIndicator">Ukraine's Turn</span>
-    </div>
+            <!-- Turn Info -->
+            <div class="turn-indicator ukraine-turn" id="turnIndicator">
+                UKRAINE'S TURN
+            </div>
 
-    <div class="board-container">
-        <div class="board" id="board"></div>
-    </div>
+            <div class="turn-counter" id="turnCounter">
+                Turn: 1 / 30
+            </div>
+        </div>
 
-    <div class="controls">
-        <button class="reset-btn" onclick="resetGame()">🔄 Reset Game</button>
+        <!-- Board -->
+        <div class="board-container">
+            <div class="coordinates">
+                <div class="coord-label">A</div>
+                <div class="coord-label">B</div>
+                <div class="coord-label">C</div>
+                <div class="coord-label">D</div>
+                <div class="coord-label">E</div>
+                <div class="coord-label">F</div>
+                <div class="coord-label">G</div>
+                <div class="coord-label">H</div>
+            </div>
+            <div class="board-row">
+                <div style="display: flex; flex-direction: column; gap: 2px; margin-right: 5px;">
+                    <div class="row-label">8</div>
+                    <div class="row-label">7</div>
+                    <div class="row-label">6</div>
+                    <div class="row-label">5</div>
+                    <div class="row-label">4</div>
+                    <div class="row-label">3</div>
+                    <div class="row-label">2</div>
+                    <div class="row-label">1</div>
+                </div>
+                <div class="board-grid" id="board"></div>
+            </div>
+        </div>
+
+        <!-- Right Panel -->
+        <div class="right-panel">
+            <!-- Russia Player Info -->
+            <div class="player-info">
+                <div class="player-name russia-color">RUSSIA</div>
+                <div class="hp-container" id="russiaHP">
+                    <div class="hp-bar"></div>
+                    <div class="hp-bar"></div>
+                    <div class="hp-bar"></div>
+                </div>
+                <div class="defense-token" id="russiaDefense">🛡️</div>
+            </div>
+
+            <!-- Timer -->
+            <div class="timer-container">
+                <div class="timer-label">TIME REMAINING</div>
+                <div class="timer-display" id="timer">20</div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button class="action-btn attack-btn" id="attackBtn" disabled>
+                    ⚔ ATTACK
+                </button>
+                <button class="action-btn fortify-btn" id="fortifyBtn" disabled>
+                    🛡 FORTIFY
+                </button>
+                <button class="action-btn end-turn-btn" id="endTurnBtn">
+                    ➤ END TURN
+                </button>
+                <button class="action-btn reset-btn" onclick="resetGame()">
+                    🔄 NEW GAME
+                </button>
+            </div>
+        </div>
     </div>
 
     <div class="instructions">
-        <h3>How to Play</h3>
-        <p>Click on your soldier to select it, then click on a valid adjacent cell to move.
-           Players take turns moving their soldiers. Move strategically to outmaneuver your opponent!</p>
+        <h3>TACTICAL DUEL - HOW TO PLAY</h3>
+        <p>
+            <strong>MOVEMENT:</strong> Click your soldier, then click a valid square (up to 2 squares away). All 8 directions allowed.<br>
+            <strong>ATTACK:</strong> If enemy is within 3 squares, click ATTACK to deal 1 damage. Cannot move after attacking.<br>
+            <strong>FORTIFY:</strong> Gain a defense token that blocks the next attack. Cannot stack multiple tokens.<br>
+            <strong>VICTORY:</strong> Eliminate enemy (reduce to 0 HP) OR occupy center at full HP (3 HP).<br>
+            <strong>TIMER:</strong> You have 20 seconds per turn. Timeout = forfeit!<br>
+            <strong>SUDDEN DEATH:</strong> After turn 15, center victory no longer requires full HP.
+        </p>
     </div>
 
-    <div class="winner-overlay" id="winnerOverlay">
-        <div class="winner-message">
-            <h2 id="winnerText">🏆 Winner! 🏆</h2>
-            <p id="winnerSubtext">Congratulations!</p>
-            <button class="reset-btn" onclick="resetGame()">Play Again</button>
+    <!-- Victory Overlay -->
+    <div class="victory-overlay" id="victoryOverlay">
+        <div class="victory-message" id="victoryMessage">
+            <h2 id="victoryTitle">VICTORY</h2>
+            <p id="victorySubtext">Winner!</p>
+            <button class="action-btn reset-btn" onclick="resetGame()" style="font-size: 1.2rem; padding: 15px 40px;">
+                PLAY AGAIN
+            </button>
         </div>
     </div>
 
     <script>
-        // Game state
+        // ========================================
+        // GAME STATE
+        // ========================================
         let gameState = {
             currentPlayer: 'ukraine',
+            turnNumber: 1,
+            suddenDeath: false,
+            gameOver: false,
             selectedCell: null,
+            movementPoints: 2,
+            hasAttacked: false,
+            hasFortified: false,
+            hasMoved: false,
             pieces: {
-                ukraine: { row: 7, col: 0 },
-                russia: { row: 0, col: 7 }
+                ukraine: {
+                    row: 0, col: 0, // A1 (bottom-left in display, row 0 col 0)
+                    hp: 3,
+                    defenseToken: false
+                },
+                russia: {
+                    row: 7, col: 7, // H8 (top-right in display)
+                    hp: 3,
+                    defenseToken: false
+                }
             },
-            gameOver: false
+            timerSeconds: 20,
+            timerInterval: null
         };
 
-        // Initialize the board
+        // ========================================
+        // SOUND EFFECTS (Web Audio API)
+        // ========================================
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+
+        function playSound(type) {
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            switch(type) {
+                case 'move':
+                    oscillator.frequency.setValueAtTime(200, now);
+                    oscillator.frequency.exponentialRampToValueAtTime(150, now + 0.1);
+                    gainNode.gain.setValueAtTime(0.3, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                    oscillator.start(now);
+                    oscillator.stop(now + 0.1);
+                    break;
+                case 'attack':
+                    oscillator.frequency.setValueAtTime(800, now);
+                    oscillator.frequency.exponentialRampToValueAtTime(100, now + 0.3);
+                    gainNode.gain.setValueAtTime(0.5, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    oscillator.start(now);
+                    oscillator.stop(now + 0.3);
+                    break;
+                case 'fortify':
+                    oscillator.frequency.setValueAtTime(400, now);
+                    oscillator.frequency.exponentialRampToValueAtTime(600, now + 0.2);
+                    gainNode.gain.setValueAtTime(0.3, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                    oscillator.start(now);
+                    oscillator.stop(now + 0.2);
+                    break;
+                case 'damage':
+                    oscillator.frequency.setValueAtTime(300, now);
+                    oscillator.frequency.exponentialRampToValueAtTime(50, now + 0.4);
+                    gainNode.gain.setValueAtTime(0.4, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    oscillator.start(now);
+                    oscillator.stop(now + 0.4);
+                    break;
+                case 'victory':
+                    oscillator.frequency.setValueAtTime(523, now);
+                    oscillator.frequency.setValueAtTime(659, now + 0.15);
+                    oscillator.frequency.setValueAtTime(784, now + 0.3);
+                    gainNode.gain.setValueAtTime(0.3, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+                    oscillator.start(now);
+                    oscillator.stop(now + 0.6);
+                    break;
+                case 'timer':
+                    oscillator.frequency.setValueAtTime(880, now);
+                    gainNode.gain.setValueAtTime(0.2, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                    oscillator.start(now);
+                    oscillator.stop(now + 0.05);
+                    break;
+            }
+        }
+
+        // ========================================
+        // BOARD INITIALIZATION
+        // ========================================
         function initBoard() {
             const board = document.getElementById('board');
             board.innerHTML = '';
 
-            for (let row = 0; row < 8; row++) {
+            // Create board from row 7 to 0 (8 to 1 in display)
+            for (let row = 7; row >= 0; row--) {
+                const rowContainer = document.createElement('div');
+                rowContainer.className = 'board-cells';
+
                 for (let col = 0; col < 8; col++) {
                     const cell = document.createElement('div');
-                    cell.className = `cell ${(row + col) % 2 === 0 ? 'light' : 'dark'}`;
+                    const isLight = (row + col) % 2 === 0;
+                    cell.className = `cell ${isLight ? 'light' : 'dark'}`;
+
+                    // Mark center zone (D4, D5, E4, E5 = rows 3-4, cols 3-4)
+                    if ((row === 3 || row === 4) && (col === 3 || col === 4)) {
+                        cell.classList.add('center-zone');
+                    }
+
                     cell.dataset.row = row;
                     cell.dataset.col = col;
                     cell.onclick = () => handleCellClick(row, col);
 
-                    // Add soldiers to their positions
-                    if (row === gameState.pieces.ukraine.row && col === gameState.pieces.ukraine.col) {
+                    // Add soldiers
+                    const ukraine = gameState.pieces.ukraine;
+                    const russia = gameState.pieces.russia;
+
+                    if (row === ukraine.row && col === ukraine.col) {
                         cell.appendChild(createSoldier('ukraine'));
+                        cell.classList.add('has-unit');
                     }
-                    if (row === gameState.pieces.russia.row && col === gameState.pieces.russia.col) {
+                    if (row === russia.row && col === russia.col) {
                         cell.appendChild(createSoldier('russia'));
+                        cell.classList.add('has-unit');
                     }
 
-                    board.appendChild(cell);
+                    rowContainer.appendChild(cell);
                 }
+                board.appendChild(rowContainer);
             }
+
+            updateUI();
         }
 
-        // Create a soldier element
+        // ========================================
+        // CREATE SOLDIER ELEMENT
+        // ========================================
         function createSoldier(country) {
             const soldier = document.createElement('div');
             soldier.className = `soldier ${country}`;
@@ -406,25 +871,134 @@
             return soldier;
         }
 
-        // Handle cell click
+        // ========================================
+        // UPDATE UI
+        // ========================================
+        function updateUI() {
+            // Update HP bars
+            updateHPDisplay('ukraine');
+            updateHPDisplay('russia');
+
+            // Update defense tokens
+            document.getElementById('ukraineDefense').classList.toggle('active', gameState.pieces.ukraine.defenseToken);
+            document.getElementById('russiaDefense').classList.toggle('active', gameState.pieces.russia.defenseToken);
+
+            // Update turn indicator
+            const turnIndicator = document.getElementById('turnIndicator');
+            if (gameState.currentPlayer === 'ukraine') {
+                turnIndicator.textContent = "UKRAINE'S TURN";
+                turnIndicator.className = 'turn-indicator ukraine-turn';
+            } else {
+                turnIndicator.textContent = "RUSSIA'S TURN";
+                turnIndicator.className = 'turn-indicator russia-turn';
+            }
+
+            // Update turn counter
+            const turnCounter = document.getElementById('turnCounter');
+            turnCounter.textContent = `Turn: ${gameState.turnNumber} / 30`;
+            if (gameState.suddenDeath) {
+                turnCounter.classList.add('sudden-death');
+                turnCounter.textContent = `⚠ SUDDEN DEATH - Turn: ${gameState.turnNumber} ⚠`;
+            }
+
+            // Update action buttons
+            updateActionButtons();
+        }
+
+        function updateHPDisplay(player) {
+            const hpContainer = document.getElementById(`${player}HP`);
+            const bars = hpContainer.querySelectorAll('.hp-bar');
+            const hp = gameState.pieces[player].hp;
+
+            bars.forEach((bar, index) => {
+                if (index < hp) {
+                    bar.classList.remove('lost');
+                } else {
+                    bar.classList.add('lost');
+                }
+            });
+        }
+
+        function updateActionButtons() {
+            const attackBtn = document.getElementById('attackBtn');
+            const fortifyBtn = document.getElementById('fortifyBtn');
+            const endTurnBtn = document.getElementById('endTurnBtn');
+
+            const canAttack = !gameState.hasAttacked && !gameState.hasFortified && canPlayerAttack();
+            const canFortify = !gameState.hasAttacked && !gameState.hasFortified && !gameState.hasMoved;
+
+            attackBtn.disabled = !canAttack;
+            fortifyBtn.disabled = !canFortify;
+        }
+
+        // ========================================
+        // TIMER SYSTEM
+        // ========================================
+        function startTurnTimer() {
+            stopTurnTimer();
+            gameState.timerSeconds = 20;
+            updateTimerDisplay();
+
+            gameState.timerInterval = setInterval(() => {
+                gameState.timerSeconds--;
+                updateTimerDisplay();
+
+                if (gameState.timerSeconds <= 5 && gameState.timerSeconds > 0) {
+                    playSound('timer');
+                }
+
+                if (gameState.timerSeconds <= 0) {
+                    handleTimeout();
+                }
+            }, 1000);
+        }
+
+        function stopTurnTimer() {
+            if (gameState.timerInterval) {
+                clearInterval(gameState.timerInterval);
+                gameState.timerInterval = null;
+            }
+        }
+
+        function updateTimerDisplay() {
+            const timerDisplay = document.getElementById('timer');
+            timerDisplay.textContent = gameState.timerSeconds;
+
+            timerDisplay.className = 'timer-display';
+            if (gameState.timerSeconds <= 5) {
+                timerDisplay.classList.add('danger');
+            } else if (gameState.timerSeconds <= 10) {
+                timerDisplay.classList.add('warning');
+            }
+        }
+
+        function handleTimeout() {
+            stopTurnTimer();
+            const winner = gameState.currentPlayer === 'ukraine' ? 'russia' : 'ukraine';
+            showVictory(winner, 'TIMEOUT FORFEIT');
+        }
+
+        // ========================================
+        // CELL CLICK HANDLER
+        // ========================================
         function handleCellClick(row, col) {
             if (gameState.gameOver) return;
 
             const clickedPiece = getPieceAt(row, col);
+            const currentPiece = gameState.pieces[gameState.currentPlayer];
 
-            // If clicking on current player's piece, select it
+            // Select own piece
             if (clickedPiece === gameState.currentPlayer) {
                 selectCell(row, col);
                 return;
             }
 
-            // If a cell is selected and clicking on a valid move
+            // Move to valid cell
             if (gameState.selectedCell && isValidMove(row, col)) {
                 movePiece(row, col);
             }
         }
 
-        // Get piece at position
         function getPieceAt(row, col) {
             if (gameState.pieces.ukraine.row === row && gameState.pieces.ukraine.col === col) {
                 return 'ukraine';
@@ -435,168 +1009,303 @@
             return null;
         }
 
-        // Select a cell
         function selectCell(row, col) {
             clearSelection();
             gameState.selectedCell = { row, col };
-
-            const cellIndex = row * 8 + col;
-            const cells = document.querySelectorAll('.cell');
-            cells[cellIndex].classList.add('selected');
-
-            // Show valid moves
-            showValidMoves(row, col);
+            showValidMoves();
+            showAttackRange();
         }
 
-        // Clear selection and valid moves
         function clearSelection() {
             gameState.selectedCell = null;
             document.querySelectorAll('.cell').forEach(cell => {
-                cell.classList.remove('selected', 'valid-move');
+                cell.classList.remove('valid-move', 'in-attack-range');
             });
         }
 
-        // Check if move is valid (adjacent cells only)
+        // ========================================
+        // MOVEMENT SYSTEM
+        // ========================================
         function isValidMove(row, col) {
             if (!gameState.selectedCell) return false;
+            if (gameState.hasAttacked || gameState.hasFortified) return false;
+            if (gameState.movementPoints <= 0) return false;
 
             const fromRow = gameState.selectedCell.row;
             const fromCol = gameState.selectedCell.col;
 
-            // Check if within bounds
-            if (row < 0 || row > 7 || col < 0 || col > 7) return false;
-
-            // Check if cell is empty (no piece there)
+            // Check if occupied
             if (getPieceAt(row, col)) return false;
 
-            // Check if adjacent (including diagonals)
-            const rowDiff = Math.abs(row - fromRow);
-            const colDiff = Math.abs(col - fromCol);
-
-            return rowDiff <= 1 && colDiff <= 1 && (rowDiff + colDiff > 0);
+            // Check if within 2 squares (Chebyshev distance)
+            const distance = Math.max(Math.abs(row - fromRow), Math.abs(col - fromCol));
+            return distance <= gameState.movementPoints;
         }
 
-        // Show valid moves
-        function showValidMoves(fromRow, fromCol) {
+        function showValidMoves() {
+            const piece = gameState.pieces[gameState.currentPlayer];
             const cells = document.querySelectorAll('.cell');
 
-            for (let row = fromRow - 1; row <= fromRow + 1; row++) {
-                for (let col = fromCol - 1; col <= fromCol + 1; col++) {
-                    if (row >= 0 && row < 8 && col >= 0 && col < 8) {
-                        if (isValidMove(row, col)) {
-                            const cellIndex = row * 8 + col;
-                            cells[cellIndex].classList.add('valid-move');
-                        }
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const distance = Math.max(Math.abs(row - piece.row), Math.abs(col - piece.col));
+                    if (distance <= gameState.movementPoints && distance > 0 && !getPieceAt(row, col)) {
+                        const cellIndex = (7 - row) * 8 + col;
+                        cells[cellIndex].classList.add('valid-move');
                     }
                 }
             }
         }
 
-        // Move piece
         function movePiece(toRow, toCol) {
             const player = gameState.currentPlayer;
-            gameState.pieces[player] = { row: toRow, col: toCol };
+            const piece = gameState.pieces[player];
 
+            const distance = Math.max(Math.abs(toRow - piece.row), Math.abs(toCol - piece.col));
+            gameState.movementPoints -= distance;
+
+            piece.row = toRow;
+            piece.col = toCol;
+
+            gameState.hasMoved = true;
+
+            playSound('move');
             clearSelection();
             initBoard();
 
-            // Check win condition (reaching opposite corner)
-            checkWinCondition();
+            checkVictoryConditions();
+        }
 
-            // Switch turns
-            if (!gameState.gameOver) {
-                gameState.currentPlayer = player === 'ukraine' ? 'russia' : 'ukraine';
-                updateTurnIndicator();
+        // ========================================
+        // ATTACK SYSTEM
+        // ========================================
+        function canPlayerAttack() {
+            const attacker = gameState.pieces[gameState.currentPlayer];
+            const defender = gameState.pieces[gameState.currentPlayer === 'ukraine' ? 'russia' : 'ukraine'];
+
+            const distance = Math.max(Math.abs(attacker.row - defender.row), Math.abs(attacker.col - defender.col));
+            return distance <= 3;
+        }
+
+        function showAttackRange() {
+            if (!canPlayerAttack()) return;
+
+            const defender = gameState.pieces[gameState.currentPlayer === 'ukraine' ? 'russia' : 'ukraine'];
+            const cells = document.querySelectorAll('.cell');
+            const cellIndex = (7 - defender.row) * 8 + defender.col;
+            cells[cellIndex].classList.add('in-attack-range');
+        }
+
+        document.getElementById('attackBtn').onclick = () => {
+            if (gameState.hasAttacked || gameState.hasFortified || !canPlayerAttack()) return;
+
+            const attacker = gameState.currentPlayer;
+            const defender = attacker === 'ukraine' ? 'russia' : 'ukraine';
+            const defenderPiece = gameState.pieces[defender];
+
+            // Check defense token
+            if (defenderPiece.defenseToken) {
+                defenderPiece.defenseToken = false;
+                playSound('fortify');
+                showDamageNumber(defender, 'BLOCKED');
+            } else {
+                defenderPiece.hp -= 1;
+                playSound('damage');
+                showAttackAnimation(defender);
+                showDamageNumber(defender, '-1');
+            }
+
+            gameState.hasAttacked = true;
+            clearSelection();
+            initBoard();
+
+            if (defenderPiece.hp <= 0) {
+                setTimeout(() => {
+                    showVictory(attacker, 'ELIMINATION VICTORY');
+                }, 500);
+            } else {
+                // End turn after attack
+                setTimeout(() => {
+                    endTurn();
+                }, 800);
+            }
+        };
+
+        function showAttackAnimation(target) {
+            const piece = gameState.pieces[target];
+            const cells = document.querySelectorAll('.cell');
+            const cellIndex = (7 - piece.row) * 8 + piece.col;
+            const cell = cells[cellIndex];
+
+            const flash = document.createElement('div');
+            flash.className = 'attack-flash';
+            cell.appendChild(flash);
+
+            setTimeout(() => flash.remove(), 600);
+        }
+
+        function showDamageNumber(target, text) {
+            const piece = gameState.pieces[target];
+            const cells = document.querySelectorAll('.cell');
+            const cellIndex = (7 - piece.row) * 8 + piece.col;
+            const cell = cells[cellIndex];
+
+            const damage = document.createElement('div');
+            damage.className = 'damage-number';
+            damage.textContent = text;
+            cell.appendChild(damage);
+
+            setTimeout(() => damage.remove(), 1000);
+        }
+
+        // ========================================
+        // FORTIFY SYSTEM
+        // ========================================
+        document.getElementById('fortifyBtn').onclick = () => {
+            if (gameState.hasAttacked || gameState.hasFortified || gameState.hasMoved) return;
+
+            const player = gameState.currentPlayer;
+            gameState.pieces[player].defenseToken = true;
+            gameState.hasFortified = true;
+
+            playSound('fortify');
+            clearSelection();
+            initBoard();
+
+            // End turn after fortify
+            setTimeout(() => {
+                endTurn();
+            }, 500);
+        };
+
+        // ========================================
+        // END TURN
+        // ========================================
+        document.getElementById('endTurnBtn').onclick = endTurn;
+
+        function endTurn() {
+            if (gameState.gameOver) return;
+
+            // Switch player
+            gameState.currentPlayer = gameState.currentPlayer === 'ukraine' ? 'russia' : 'ukraine';
+
+            // Increment turn counter (one full turn = both players moved)
+            if (gameState.currentPlayer === 'ukraine') {
+                gameState.turnNumber++;
+
+                // Sudden Death mode activates at turn 16 (after 15 full turns)
+                if (gameState.turnNumber >= 16) {
+                    gameState.suddenDeath = true;
+                }
+            }
+
+            // Reset turn state
+            gameState.movementPoints = 2;
+            gameState.hasAttacked = false;
+            gameState.hasFortified = false;
+            gameState.hasMoved = false;
+            gameState.selectedCell = null;
+
+            clearSelection();
+            initBoard();
+            startTurnTimer();
+        }
+
+        // ========================================
+        // VICTORY CONDITIONS
+        // ========================================
+        function checkVictoryConditions() {
+            // Check elimination (handled in attack function)
+
+            // Check objective control (center zone)
+            const ukraine = gameState.pieces.ukraine;
+            const russia = gameState.pieces.russia;
+
+            const isCenterZone = (row, col) => {
+                return (row === 3 || row === 4) && (col === 3 || col === 4);
+            };
+
+            // Ukraine center control
+            if (isCenterZone(ukraine.row, ukraine.col)) {
+                if (ukraine.hp === 3 || gameState.suddenDeath) {
+                    setTimeout(() => {
+                        showVictory('ukraine', 'OBJECTIVE CONTROL VICTORY');
+                    }, 500);
+                }
+            }
+
+            // Russia center control
+            if (isCenterZone(russia.row, russia.col)) {
+                if (russia.hp === 3 || gameState.suddenDeath) {
+                    setTimeout(() => {
+                        showVictory('russia', 'OBJECTIVE CONTROL VICTORY');
+                    }, 500);
+                }
             }
         }
 
-        // Check win condition
-        function checkWinCondition() {
-            // Ukraine wins by reaching Russia's starting corner (0, 7)
-            if (gameState.pieces.ukraine.row === 0 && gameState.pieces.ukraine.col === 7) {
-                showWinner('Ukraine');
-                return;
-            }
-
-            // Russia wins by reaching Ukraine's starting corner (7, 0)
-            if (gameState.pieces.russia.row === 7 && gameState.pieces.russia.col === 0) {
-                showWinner('Russia');
-                return;
-            }
-        }
-
-        // Show winner
-        function showWinner(winner) {
+        function showVictory(winner, reason) {
             gameState.gameOver = true;
-            const overlay = document.getElementById('winnerOverlay');
-            const winnerText = document.getElementById('winnerText');
-            const winnerSubtext = document.getElementById('winnerSubtext');
+            stopTurnTimer();
 
-            winnerText.textContent = `🏆 ${winner} Wins! 🏆`;
-            winnerSubtext.textContent = `${winner} has reached the opposite corner!`;
+            playSound('victory');
+
+            const overlay = document.getElementById('victoryOverlay');
+            const message = document.getElementById('victoryMessage');
+            const title = document.getElementById('victoryTitle');
+            const subtext = document.getElementById('victorySubtext');
+
+            title.textContent = `${winner.toUpperCase()} VICTORY`;
+            subtext.textContent = reason;
+
+            message.className = 'victory-message';
+            message.classList.add(`${winner}-victory`);
 
             overlay.classList.add('show');
         }
 
-        // Update turn indicator
-        function updateTurnIndicator() {
-            const indicator = document.getElementById('turnIndicator');
-            if (gameState.currentPlayer === 'ukraine') {
-                indicator.textContent = "Ukraine's Turn";
-                indicator.className = 'current-turn ukraine-turn';
-            } else {
-                indicator.textContent = "Russia's Turn";
-                indicator.className = 'current-turn russia-turn';
-            }
-        }
-
-        // Reset game
+        // ========================================
+        // RESET GAME
+        // ========================================
         function resetGame() {
+            stopTurnTimer();
+
             gameState = {
                 currentPlayer: 'ukraine',
+                turnNumber: 1,
+                suddenDeath: false,
+                gameOver: false,
                 selectedCell: null,
+                movementPoints: 2,
+                hasAttacked: false,
+                hasFortified: false,
+                hasMoved: false,
                 pieces: {
-                    ukraine: { row: 7, col: 0 },
-                    russia: { row: 0, col: 7 }
+                    ukraine: {
+                        row: 0, col: 0,
+                        hp: 3,
+                        defenseToken: false
+                    },
+                    russia: {
+                        row: 7, col: 7,
+                        hp: 3,
+                        defenseToken: false
+                    }
                 },
-                gameOver: false
+                timerSeconds: 20,
+                timerInterval: null
             };
 
-            document.getElementById('winnerOverlay').classList.remove('show');
-            updateTurnIndicator();
+            document.getElementById('victoryOverlay').classList.remove('show');
             initBoard();
+            startTurnTimer();
         }
 
-        // Initialize game on load
+        // ========================================
+        // INITIALIZE GAME
+        // ========================================
         initBoard();
-
-        // Flying planes decoration
-        let planeDirection = 'left-to-right';
-
-        function spawnPlane() {
-            const container = document.getElementById('planeContainer');
-            const plane = document.createElement('div');
-            plane.className = `plane ${planeDirection}`;
-            plane.textContent = '✈️';
-
-            // Random vertical position (10% to 90% of screen height)
-            const randomY = 10 + Math.random() * 80;
-            plane.style.top = `${randomY}%`;
-
-            container.appendChild(plane);
-
-            // Alternate direction for next plane
-            planeDirection = planeDirection === 'left-to-right' ? 'right-to-left' : 'left-to-right';
-
-            // Remove plane after animation completes (4 seconds)
-            setTimeout(() => {
-                plane.remove();
-            }, 4000);
-        }
-
-        // Spawn first plane immediately, then every 5 seconds
-        spawnPlane();
-        setInterval(spawnPlane, 5000);
+        startTurnTimer();
     </script>
 </body>
 </html>
