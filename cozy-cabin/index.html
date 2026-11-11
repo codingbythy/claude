@@ -141,7 +141,8 @@ button { cursor: pointer; }
   const $ = id => document.getElementById(id);
   const rand = (a, b) => a + Math.random() * (b - a);
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-  const clock = () => performance.now() / 1000;
+  const R = window.__render || null; /* set only by the offline video renderer */
+  const clock = () => R ? R.t : performance.now() / 1000;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ---------- settings ---------- */
@@ -310,13 +311,14 @@ button { cursor: pointer; }
       hx.fillStyle = `rgba(240,232,220,${(0.3 * Math.sin(Math.PI * k)).toFixed(2)})`;
       hx.fillRect(Math.round(p.x + Math.sin(p.age * 2.2 + p.ph) * (1 + 2.5 * k)), Math.round(p.y), 1, 1);
     }
-    requestAnimationFrame(frame);
+    if (!R) requestAnimationFrame(frame);
   }
-  requestAnimationFrame(frame);
+  if (!R) requestAnimationFrame(frame);
 
   /* ---------- sound, all generated in the browser ---------- */
   let ac = null, A = null, running = false;
   const vol = el => Math.pow(el.value / 100, 1.6);
+  const atime = () => R ? R.t : ac.currentTime;
 
   function noise(seconds, brown) {
     const n = Math.floor(ac.sampleRate * seconds), buf = ac.createBuffer(1, n, ac.sampleRate), d = buf.getChannelData(0);
@@ -331,7 +333,7 @@ button { cursor: pointer; }
   function chain() { for (let i = 1; i < arguments.length; i++) arguments[i - 1].connect(arguments[i]); return arguments[arguments.length - 1]; }
 
   function buildAudio() {
-    ac = new (window.AudioContext || window.webkitAudioContext)();
+    ac = R ? R.ac : new (window.AudioContext || window.webkitAudioContext)();
     const brown = noise(11, true), white = noise(3, false);
     const master = gain(0), comp = ac.createDynamicsCompressor();
     comp.threshold.value = -16; comp.ratio.value = 3; comp.attack.value = 0.02; comp.release.value = 0.6;
@@ -351,7 +353,7 @@ button { cursor: pointer; }
     const roarG = gain(0.5);
     chain(loop(brown, 1.6), filt('bandpass', 240, 0.5), roarG, fireBus);
 
-    A = { brown, white, master, windBus, fireBus, thunderBus, howlF, howlG, hissG, roarG, nextPop: ac.currentTime + 0.3 };
+    A = { brown, white, master, windBus, fireBus, thunderBus, howlF, howlG, hissG, roarG, nextPop: atime() + 0.3 };
   }
 
   function pop(at) {
@@ -367,7 +369,7 @@ button { cursor: pointer; }
   function thunder(s) {
     if (!running || s.heard) return;
     s.heard = true;
-    const at = ac.currentTime + Math.max(0, s.t - clock()) + s.delay;
+    const at = atime() + Math.max(0, s.t - clock()) + s.delay;
     const dur = rand(6, 9.5), peak = 1.5 / (1 + s.delay * 0.45);
     const src = ac.createBufferSource(); src.buffer = A.brown; src.loop = true; src.playbackRate.value = rand(0.5, 0.75);
     const lp = filt('lowpass', 520, 0.4);
@@ -388,7 +390,7 @@ button { cursor: pointer; }
     const t = clock();
     if (t >= nextStrike - 0.6) { const at = Math.max(t, nextStrike); strike(at); planNext(at, false); }
     if (running) {
-      const now = ac.currentTime, g = gust(t + 0.6);
+      const now = atime(), g = gust(t + 0.6);
       A.howlG.gain.setTargetAtTime(0.1 + 0.42 * g, now, 0.7);
       A.howlF.frequency.setTargetAtTime(330 + 330 * g, now, 0.9);
       A.hissG.gain.setTargetAtTime(0.006 + 0.014 * g, now, 0.7);
@@ -398,7 +400,7 @@ button { cursor: pointer; }
       sleepTick();
     }
   }
-  setInterval(tick, 450);
+  if (!R) setInterval(tick, 450);
   planNext(clock(), true);
 
   /* ---------- controls ---------- */
@@ -408,16 +410,16 @@ button { cursor: pointer; }
   function setSound(on) {
     if (on) {
       if (!ac) buildAudio();
-      ac.resume();
+      if (!R) ac.resume();
       running = true; fading = false;
       dim.style.transition = 'opacity 1.5s'; dim.style.opacity = 0;
-      A.master.gain.cancelScheduledValues(ac.currentTime);
-      A.master.gain.setTargetAtTime(0.9, ac.currentTime, 1.2);
+      A.master.gain.cancelScheduledValues(atime());
+      A.master.gain.setTargetAtTime(0.9, atime(), 1.2);
       armSleep();
     } else if (ac) {
       running = false;
-      A.master.gain.cancelScheduledValues(ac.currentTime);
-      A.master.gain.setTargetAtTime(0, ac.currentTime, 0.25);
+      A.master.gain.cancelScheduledValues(atime());
+      A.master.gain.setTargetAtTime(0, atime(), 0.25);
       setTimeout(() => { if (!running) ac.suspend(); }, 1500);
     }
     chip.classList.toggle('on', on);
@@ -436,8 +438,8 @@ button { cursor: pointer; }
     label();
     if (!fading && clock() >= sleepAt - 45) {
       fading = true;
-      A.master.gain.cancelScheduledValues(ac.currentTime);
-      A.master.gain.setTargetAtTime(0, ac.currentTime, 12);
+      A.master.gain.cancelScheduledValues(atime());
+      A.master.gain.setTargetAtTime(0, atime(), 12);
       dim.style.transition = 'opacity 45s linear'; dim.style.opacity = 0.92;
     }
     if (clock() >= sleepAt) { sleepAt = 0; ui.timer.value = '0'; setSound(false); }
@@ -458,9 +460,9 @@ button { cursor: pointer; }
   document.querySelector('.actions').prepend(soundBtn); syncBtn();
   chip.addEventListener('click', syncBtn);
 
-  ui.wind.addEventListener('input', () => { store.set('wind', ui.wind.value); if (A) A.windBus.gain.setTargetAtTime(vol(ui.wind), ac.currentTime, 0.05); });
-  ui.fire.addEventListener('input', () => { store.set('fire', ui.fire.value); if (A) A.fireBus.gain.setTargetAtTime(vol(ui.fire), ac.currentTime, 0.05); });
-  ui.thunder.addEventListener('input', () => { store.set('thunder', ui.thunder.value); if (A) A.thunderBus.gain.setTargetAtTime(vol(ui.thunder), ac.currentTime, 0.05); });
+  ui.wind.addEventListener('input', () => { store.set('wind', ui.wind.value); if (A) A.windBus.gain.setTargetAtTime(vol(ui.wind), atime(), 0.05); });
+  ui.fire.addEventListener('input', () => { store.set('fire', ui.fire.value); if (A) A.fireBus.gain.setTargetAtTime(vol(ui.fire), atime(), 0.05); });
+  ui.thunder.addEventListener('input', () => { store.set('thunder', ui.thunder.value); if (A) A.thunderBus.gain.setTargetAtTime(vol(ui.thunder), atime(), 0.05); });
   ui.strikes.addEventListener('change', () => { store.set('strikes', ui.strikes.value); planNext(clock(), false); });
   ui.timer.addEventListener('change', () => { if (running) armSleep(); });
   $('flashNow').addEventListener('click', () => strike(clock() + 0.05));
@@ -479,6 +481,7 @@ button { cursor: pointer; }
   }
   ['pointermove', 'pointerdown', 'keydown', 'focusin'].forEach(ev => addEventListener(ev, wake));
   wake();
+  if (R) { invite.hidden = true; hud.hidden = true; Object.assign(R, { frame, tick, strike, start: () => setSound(true) }); }
 })();
 </script>
 <!--/PAGE-->
