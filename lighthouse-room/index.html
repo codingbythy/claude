@@ -175,7 +175,7 @@ button { cursor: pointer; }
   const seaMask = document.createElement('canvas'); seaMask.width = 730; seaMask.height = 142;
   let loaded = 0;
   const gImg = new Image(), sImg = new Image();
-  gImg.onload = () => { glassLo.getContext('2d').drawImage(gImg, 0, 0, W, H); glassHi.getContext('2d').drawImage(gImg, 0, 0); loaded++; };
+  gImg.onload = () => { glassLo.getContext('2d').drawImage(gImg, 0, 0, W, H); const gh = glassHi.getContext('2d'); gh.drawImage(gImg, 0, 0); gh.fillStyle = '#fff'; gh.beginPath(); gh.arc(1498, 350, 16, 0, 7); gh.fill(); loaded++; };
   sImg.onload = () => { seaMask.getContext('2d').drawImage(sImg, 862, 433, 730, 142, 0, 0, 730, 142); loaded++; };
   gImg.src = 'glass-mask.png'; sImg.src = 'sea-mask.png';
   const ready = () => loaded === 2 && base.complete && base.naturalWidth > 0;
@@ -260,7 +260,7 @@ button { cursor: pointer; }
       bx.beginPath(); bx.moveTo(LH.x, LH.y - 2); bx.lineTo(ex, LH.y - half - 6); bx.lineTo(ex, LH.y + half - 6); bx.lineTo(LH.x, LH.y + 2); bx.closePath(); bx.fill();
     }
     const glow = 0.25 + 0.75 * Math.pow(toward, 6);
-    const r = 10 + 34 * Math.pow(toward, 4);
+    const r = 7 + 16 * Math.pow(toward, 4);
     const rg = bx.createRadialGradient(LH.x, LH.y, 0, LH.x, LH.y, r * 3);
     rg.addColorStop(0, `rgba(255,244,214,${(0.9 * glow).toFixed(3)})`);
     rg.addColorStop(0.25, `rgba(255,214,150,${(0.4 * glow).toFixed(3)})`);

@@ -16,7 +16,7 @@ ffmpeg -y -loglevel error -ss 10 -i "$LOOPV" -loop 1 -t 9 -i "$TITLE" -filter_co
   "[1:v]format=rgba,fade=in:st=0.8:d=1.2:alpha=1,fade=out:st=7:d=1.5:alpha=1[t];[0:v]fade=in:st=0:d=1.5[b];[b][t]overlay=eof_action=pass[v]" \
   -map "[v]" -t 170 $V "$KIT/intro.mp4"
 ffmpeg -y -loglevel error -t 30 -i "$LOOPV" -vf "fade=out:st=20:d=10" $V "$KIT/outro.mp4"
-ffmpeg -y -loglevel error -i "$AMB" -af "aloop=loop=1:size=2147483647" -ac 1 -c:a flac -f flac - 2>/dev/null | ffmpeg -y -loglevel error -i - -ss 10 -t 180 -c:a flac "$KIT/ambience.flac"
+ffmpeg -y -loglevel error -stream_loop 1 -i "$AMB" -ss 10 -t 180 -ac 1 -c:a flac "$KIT/ambience.flac"
 ffmpeg -y -loglevel error -i "$MUSIC" -c:a flac "$KIT/music.flac"
 cp "$(dirname "$0")/kit-build.sh" "$KIT/build.sh"; chmod +x "$KIT/build.sh"
 ls -la "$KIT"
