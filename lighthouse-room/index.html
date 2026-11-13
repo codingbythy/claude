@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!--PAGE-->
+<title>Cartographer's Cottage</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=Nunito:wght@400;600&display=swap">
+<style>
+/* Layout: the painting fills the screen; one control chip in the bottom-left corner fades away when idle. Same shell as Stargazer's Cabin. */
+:root {
+  color-scheme: dark;
+  --night: #080d16;
+  --cream: #efe6d2;
+  --cream-dim: #c2b9a3;
+  --lamp: #f2b562;
+  --sea: #9fc4d8;
+  --panel: rgba(18, 16, 14, 0.86);
+  --line: rgba(239, 230, 210, 0.18);
+  --display: "Pixelify Sans", "Courier New", monospace;
+  --body: "Nunito", "Segoe UI", system-ui, sans-serif;
+}
+html, body { height: 100%; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--night); color: var(--cream); font-family: var(--body); font-size: 15px; overflow: hidden; }
+
+#stage { position: fixed; inset: 0; overflow: hidden; background: var(--night); }
+#scene { position: absolute; left: 0; top: 0; width: 1672px; height: 941px; transform-origin: 0 0; }
+#scene > * { position: absolute; left: 0; top: 0; width: 1672px; height: 941px; pointer-events: none; }
+#scene img { display: block; max-width: none; }
+#scene canvas.px { image-rendering: pixelated; }
+#seaC { left: 862px; top: 433px; width: 730px; height: 142px; }
+#lampGlow { background:
+    radial-gradient(circle at 142px 500px, rgba(255, 190, 100, 0.55), rgba(255, 160, 70, 0) 170px),
+    radial-gradient(circle at 1585px 700px, rgba(255, 190, 100, 0.5), rgba(255, 160, 70, 0) 140px);
+  mix-blend-mode: screen; opacity: 0.3; }
+#spill { background: radial-gradient(ellipse 950px 650px at 1225px 330px, rgba(176, 200, 255, 0.5), rgba(150, 180, 255, 0.15) 55%, rgba(150, 180, 255, 0) 100%);
+  mix-blend-mode: screen; opacity: 0; }
+#dim { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity 45s linear; }
+
+.hud { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; gap: 10px;
+  padding-block: 16px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); pointer-events: none; transition: opacity 0.8s; }
+.hud.idle { opacity: 0; }
+.hud > * { pointer-events: auto; }
+button, select, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--lamp); outline-offset: 2px; }
+.chip { font-family: var(--display); font-size: 16px; letter-spacing: 0.03em; background: var(--panel); border: 2px solid var(--line); color: var(--cream);
+  padding: 8px 14px; display: flex; align-items: center; gap: 10px; }
+.chip:hover { border-color: var(--lamp); }
+.chip .dot { width: 8px; height: 8px; background: var(--cream-dim); }
+.chip.on .dot { background: var(--lamp); box-shadow: 0 0 8px var(--lamp); }
+.chip small { font-family: var(--body); font-size: 13px; color: var(--cream-dim); }
+.panel { width: min(320px, 100%); background: var(--panel); border: 2px solid var(--line); padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.panel h1 { font-family: var(--display); font-weight: 600; font-size: 22px; margin: 0; color: var(--lamp); text-wrap: balance; }
+.panel p { margin: 0; color: var(--cream-dim); font-size: 13px; line-height: 1.45; }
+.rows { display: grid; grid-template-columns: auto 1fr; gap: 10px 14px; align-items: center; }
+.rows label { font-family: var(--display); font-size: 15px; letter-spacing: 0.04em; }
+.rows input[type=range] { width: 100%; min-width: 0; accent-color: var(--lamp); }
+.rows select { width: 100%; min-width: 0; background: rgba(0, 0, 0, 0.35); border: 2px solid var(--line); padding: 5px 8px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { font-family: var(--display); font-size: 15px; background: transparent; border: 2px solid var(--line); padding: 6px 12px; }
+.btn:hover { border-color: var(--lamp); }
+.btn.primary { background: var(--lamp); border-color: var(--lamp); color: #2a1808; font-weight: 600; }
+#invite { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: radial-gradient(ellipse at center, rgba(8, 13, 22, 0.55), rgba(8, 13, 22, 0.15) 70%); transition: opacity 1.2s; }
+#invite.gone { opacity: 0; pointer-events: none; }
+#invite .card { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px; max-width: 30ch; }
+#invite h2 { font-family: var(--display); font-weight: 600; font-size: clamp(28px, 6vw, 44px); margin: 0; text-shadow: 0 3px 0 rgba(0, 0, 0, 0.6); text-wrap: balance; }
+#invite p { margin: 0; color: var(--cream); text-shadow: 0 1px 6px #000; line-height: 1.5; }
+#invite .btn { font-size: 18px; padding: 10px 22px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="scene">
+    <img id="base" src="room.webp" alt="A pixel-art cottage bedroom at night: a bed with knitted blankets, a lantern and mug on the nightstand, a sea chart on a stone wall, and a wide window over a stormy sea with a lighthouse on the far headland.">
+    <canvas id="seaC" width="730" height="142"></canvas>
+    <canvas id="beam" width="1672" height="941"></canvas>
+    <canvas id="win" class="px" width="418" height="235"></canvas>
+    <div id="spill"></div>
+    <div id="lampGlow"></div>
+    <canvas id="room" class="px" width="418" height="235"></canvas>
+  </div>
+  <div id="dim"></div>
+
+  <div id="invite">
+    <div class="card">
+      <h2>Cartographer's Cottage</h2>
+      <p>Rain on the glass, the sea below, a lighthouse keeping watch.</p>
+      <button class="btn primary" id="begin" type="button">Settle in with sound</button>
+    </div>
+  </div>
+
+  <div class="hud" id="hud">
+    <div class="panel" id="panel" hidden>
+      <h1>Cartographer's Cottage</h1>
+      <div class="rows">
+        <label for="volRain">Rain</label><input id="volRain" type="range" min="0" max="100" value="60">
+        <label for="volSea">Sea</label><input id="volSea" type="range" min="0" max="100" value="60">
+        <label for="volWind">Wind</label><input id="volWind" type="range" min="0" max="100" value="40">
+        <label for="volThunder">Thunder</label><input id="volThunder" type="range" min="0" max="100" value="40">
+        <label for="strikes">Lightning</label>
+        <select id="strikes">
+          <option value="off">Off</option>
+          <option value="rare">Rare</option>
+          <option value="some" selected>Occasional</option>
+          <option value="often">Often</option>
+        </select>
+        <label for="timer">Sleep timer</label>
+        <select id="timer">
+          <option value="0" selected>Off</option>
+          <option value="15">15 minutes</option>
+          <option value="30">30 minutes</option>
+          <option value="60">1 hour</option>
+          <option value="120">2 hours</option>
+        </select>
+      </div>
+      <div class="actions">
+        <button class="btn primary" id="soundToggle" type="button">Turn sound on</button>
+        <button class="btn" id="fs" type="button">Full screen</button>
+        <button class="btn" id="flashNow" type="button">Lightning now</button>
+      </div>
+      <p>When the sleep timer ends, the sound and the picture fade out together.</p>
+    </div>
+    <button class="chip" id="chip" type="button" aria-expanded="false" aria-controls="panel">
+      <span class="dot"></span><span id="chipLabel">Sound off</span><small id="chipNote">settings</small>
+    </button>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const SW = 1672, SH = 941, W = 418, H = 235;
+  const $ = id => document.getElementById(id);
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const R = window.__render || null; /* set only by the offline video renderer */
+  const clock = () => R ? R.t : performance.now() / 1000;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('cottage.' + k); return v === null ? d : v; } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem('cottage.' + k, v); } catch (e) {} }
+  };
+  const ui = { rain: $('volRain'), sea: $('volSea'), wind: $('volWind'), thunder: $('volThunder'), strikes: $('strikes'), timer: $('timer') };
+  ui.rain.value = store.get('rain', 60);
+  ui.sea.value = store.get('sea', 60);
+  ui.wind.value = store.get('wind', 40);
+  ui.thunder.value = store.get('thunder', 40);
+  ui.strikes.value = store.get('strikes', reduced ? 'off' : 'some');
+
+  const scene = $('scene');
+  function fit() {
+    const vw = innerWidth, vh = innerHeight;
+    const s = Math.max(vw / SW, vh / SH);
+    const ox = clamp(vw / 2 - 0.5 * SW * s, vw - SW * s, 0);
+    const oy = clamp(vh / 2 - 0.5 * SH * s, vh - SH * s, 0);
+    scene.style.transform = `translate(${ox}px,${oy}px) scale(${s})`;
+  }
+  addEventListener('resize', fit); fit();
+
+  const gust = t => clamp(0.5 + 0.28 * Math.sin(t * 0.29) + 0.17 * Math.sin(t * 0.077 + 1.3) + 0.09 * Math.sin(t * 0.83 + 0.4), 0, 1);
+  /* sea swell: a breaker every 9 s, shared by picture and sound */
+  const SWELL = 9;
+
+  /* ---------- masks ---------- */
+  const base = $('base');
+  const glassLo = document.createElement('canvas'); glassLo.width = W; glassLo.height = H;
+  const glassHi = document.createElement('canvas'); glassHi.width = SW; glassHi.height = SH;
+  const seaMask = document.createElement('canvas'); seaMask.width = 730; seaMask.height = 142;
+  let loaded = 0;
+  const gImg = new Image(), sImg = new Image();
+  gImg.onload = () => { glassLo.getContext('2d').drawImage(gImg, 0, 0, W, H); glassHi.getContext('2d').drawImage(gImg, 0, 0); loaded++; };
+  sImg.onload = () => { seaMask.getContext('2d').drawImage(sImg, 862, 433, 730, 142, 0, 0, 730, 142); loaded++; };
+  gImg.src = 'glass-mask.png'; sImg.src = 'sea-mask.png';
+  const ready = () => loaded === 2 && base.complete && base.naturalWidth > 0;
+
+  /* ---------- rain outside, drops on the glass ---------- */
+  const winC = $('win'), wx = winC.getContext('2d');
+  const BOX = { x0: 215, x1: 398, y0: 15, y1: 140 };
+  const streaks = [];
+  for (let i = 0; i < 200; i++) streaks.push({ x: rand(BOX.x0, BOX.x1 + 30), y: rand(BOX.y0, BOX.y1), v: rand(110, 170), len: rand(3, 6), a: rand(0.07, 0.2) });
+  const drops = [];
+  function newDrop(y) { return { x: rand(BOX.x0, BOX.x1), y: y === undefined ? rand(BOX.y0, BOX.y1) : y, v: 0, stick: rand(1, 9), a: rand(0.35, 0.7), s: Math.random() < 0.2 ? 2 : 1, trail: [] }; }
+  for (let i = 0; i < 55; i++) drops.push(newDrop());
+
+  /* ---------- lightning ---------- */
+  const GAPS = { rare: [70, 150], some: [30, 75], often: [12, 30] };
+  let strikes = [], nextStrike = Infinity;
+  function planNext(from, soon) { const g = GAPS[ui.strikes.value]; nextStrike = g ? from + (soon ? rand(7, 11) : rand(g[0], g[1])) : Infinity; }
+  function makeBolt() {
+    let x = rand(225, 380), y = 18; const end = rand(70, 100), pts = [[x, y]];
+    while (y < end) { y += rand(3, 7); x += rand(-5, 5); pts.push([x, y]); }
+    const fork = Math.floor(rand(1, pts.length - 1)), br = [pts[fork]];
+    let bx = pts[fork][0], by = pts[fork][1]; const dir = Math.random() < 0.5 ? -1 : 1;
+    for (let i = 0; i < 3; i++) { bx += dir * rand(2, 6); by += rand(2, 5); br.push([bx, by]); }
+    return [pts, br];
+  }
+  function strike(t) {
+    const pulses = [{ dt: 0, a: rand(0.55, 0.9), tau: 0.1 }];
+    if (Math.random() < 0.75) pulses.push({ dt: rand(0.11, 0.2), a: rand(0.4, 1), tau: 0.12 });
+    pulses.push({ dt: pulses[pulses.length - 1].dt + rand(0.14, 0.3), a: rand(0.3, 0.6), tau: 0.5 });
+    const s = { t, pulses, bolt: Math.random() < 0.45 ? makeBolt() : null, delay: rand(1.5, 4.5) };
+    strikes.push(s); thunder(s);
+  }
+  function flashLevel(t) {
+    let v = 0;
+    for (const s of strikes) for (const p of s.pulses) {
+      const x = t - s.t - p.dt;
+      if (x >= 0) v = Math.max(v, p.a * (x < 0.03 ? x / 0.03 : Math.exp(-(x - 0.03) / p.tau)));
+    }
+    return v;
+  }
+  function line(ctx, a, b) {
+    const n = Math.max(Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1])) | 0;
+    for (let i = 0; i <= n; i++) ctx.fillRect(Math.round(a[0] + (b[0] - a[0]) * i / (n || 1)), Math.round(a[1] + (b[1] - a[1]) * i / (n || 1)), 1, 1);
+  }
+
+  /* ---------- sea: rows of the painting shifted to roll toward the shore ---------- */
+  const seaC = $('seaC'), sx = seaC.getContext('2d');
+  function drawSea(t) {
+    sx.globalCompositeOperation = 'source-over';
+    sx.clearRect(0, 0, 730, 142);
+    const swellPhase = (t / SWELL) % 1;
+    for (let y = 0; y < 142; y++) {
+      const depth = y / 141;                       /* 0 at the horizon, 1 near the window */
+      const amp = 0.4 + 2.6 * depth * depth;
+      const k = 0.09 + 0.16 * (1 - depth);
+      const dx = amp * (Math.sin(y * k * 2.1 - t * 1.25) * 0.65 + Math.sin(y * k * 0.7 - t * 0.55 + 1.7) * 0.35);
+      const roll = Math.sin(2 * Math.PI * (swellPhase - depth * 0.8));
+      const dy = (0.3 + 1.5 * depth) * roll;
+      const sy = clamp(Math.round(433 + y - dy), 433, 574);
+      sx.drawImage(base, 862 - 6, sy, 742, 1, -6 + dx, y, 742, 1);
+    }
+    sx.globalCompositeOperation = 'destination-in';
+    sx.drawImage(seaMask, 0, 0);
+  }
+
+  /* ---------- lighthouse beam ---------- */
+  const beamC = $('beam'), bx = beamC.getContext('2d');
+  const LH = { x: 1498, y: 346 }, TURN = 12;
+  function drawBeam(t) {
+    bx.globalCompositeOperation = 'source-over';
+    bx.clearRect(0, 0, SW, SH);
+    const th = 2 * Math.PI * (t / TURN);
+    const c = Math.cos(th), toward = Math.max(0, Math.sin(th));
+    bx.globalCompositeOperation = 'lighter';
+    const len = 520 * Math.abs(c), dir = c >= 0 ? -1 : 1;
+    if (len > 8) {
+      const ex = LH.x + dir * len, half = 6 + 26 * Math.abs(c);
+      const g = bx.createLinearGradient(LH.x, LH.y, ex, LH.y);
+      const a = 0.22 * (0.35 + 0.65 * Math.abs(c));
+      g.addColorStop(0, `rgba(255,236,190,${a.toFixed(3)})`); g.addColorStop(1, 'rgba(255,236,190,0)');
+      bx.fillStyle = g;
+      bx.beginPath(); bx.moveTo(LH.x, LH.y - 2); bx.lineTo(ex, LH.y - half - 6); bx.lineTo(ex, LH.y + half - 6); bx.lineTo(LH.x, LH.y + 2); bx.closePath(); bx.fill();
+    }
+    const glow = 0.25 + 0.75 * Math.pow(toward, 6);
+    const r = 10 + 34 * Math.pow(toward, 4);
+    const rg = bx.createRadialGradient(LH.x, LH.y, 0, LH.x, LH.y, r * 3);
+    rg.addColorStop(0, `rgba(255,244,214,${(0.9 * glow).toFixed(3)})`);
+    rg.addColorStop(0.25, `rgba(255,214,150,${(0.4 * glow).toFixed(3)})`);
+    rg.addColorStop(1, 'rgba(255,200,130,0)');
+    bx.fillStyle = rg; bx.fillRect(LH.x - r * 3, LH.y - r * 3, r * 6, r * 6);
+    bx.globalCompositeOperation = 'destination-in';
+    bx.drawImage(glassHi, 0, 0);
+  }
+
+  /* ---------- room: lantern flicker, mug steam ---------- */
+  const roomC = $('room'), rx = roomC.getContext('2d');
+  const steam = [];
+  let lampLevel = 0.5, lampTarget = 0.5, lampHold = 0;
+  const lampGlow = $('lampGlow'), spill = $('spill');
+
+  let last = clock();
+  function frame() {
+    const t = clock(), dt = Math.min(0.05, t - last); last = t;
+    if (ready()) {
+      const g = gust(t);
+      drawSea(t);
+      drawBeam(t);
+
+      wx.globalCompositeOperation = 'source-over';
+      wx.clearRect(0, 0, W, H);
+      const fl = flashLevel(t);
+      if (fl > 0.004) {
+        wx.fillStyle = `rgba(196,212,255,${(0.5 * fl).toFixed(3)})`;
+        wx.fillRect(BOX.x0 - 5, 0, BOX.x1 - BOX.x0 + 10, BOX.y1 + 5);
+        for (const s of strikes) {
+          const age = t - s.t;
+          if (s.bolt && age >= 0 && age < 0.3) {
+            wx.fillStyle = `rgba(240,244,255,${clamp(fl * 1.4, 0, 1).toFixed(3)})`;
+            for (const path of s.bolt) for (let i = 1; i < path.length; i++) line(wx, path[i - 1], path[i]);
+          }
+        }
+      }
+      const slant = 0.18 + 0.22 * g;
+      for (const s of streaks) {
+        s.y += s.v * dt; s.x -= s.v * slant * dt;
+        if (s.y > BOX.y1) { s.y = BOX.y0 - rand(0, 10); s.x = rand(BOX.x0, BOX.x1 + 30); }
+        if (s.x < BOX.x0 - 5) s.x = BOX.x1 + 5;
+        wx.fillStyle = `rgba(205,220,240,${s.a})`;
+        for (let i = 0; i < s.len; i++) wx.fillRect(Math.round(s.x + slant * i), Math.round(s.y - i), 1, 1);
+      }
+      for (let i = 0; i < drops.length; i++) {
+        const d = drops[i];
+        if ((d.stick -= dt) <= 0) {
+          d.v = d.v ? d.v : rand(6, 22);
+          d.y += d.v * dt; d.x += Math.sin(t * 3 + i) * 0.4 * dt;
+          if (Math.random() < dt * 0.8) { d.v = 0; d.stick = rand(0.4, 3); }
+          d.trail.push([d.x, d.y]); if (d.trail.length > 14) d.trail.shift();
+        }
+        if (d.y > BOX.y1) { drops[i] = newDrop(rand(BOX.y0, BOX.y0 + 40)); continue; }
+        wx.fillStyle = `rgba(200,216,236,${(d.a * 0.25).toFixed(2)})`;
+        for (const p of d.trail) wx.fillRect(Math.round(p[0]), Math.round(p[1]), 1, 1);
+        wx.fillStyle = `rgba(226,236,250,${(d.a * 0.8).toFixed(2)})`;
+        wx.fillRect(Math.round(d.x), Math.round(d.y), d.s, d.s + 1);
+        wx.fillStyle = `rgba(20,30,50,${(d.a * 0.5).toFixed(2)})`;
+        wx.fillRect(Math.round(d.x), Math.round(d.y) + d.s + 1, d.s, 1);
+      }
+      wx.globalCompositeOperation = 'destination-in';
+      wx.drawImage(glassLo, 0, 0);
+      spill.style.opacity = (0.5 * fl).toFixed(3);
+      strikes = strikes.filter(s => t - s.t < 3);
+
+      if ((lampHold -= dt) <= 0) { lampTarget = Math.random(); lampHold = rand(0.12, 0.45); }
+      lampLevel += (lampTarget - lampLevel) * Math.min(1, dt * 5);
+      lampGlow.style.opacity = (0.22 + 0.18 * lampLevel).toFixed(3);
+
+      rx.clearRect(0, 0, W, H);
+      if (Math.random() < dt * 5) steam.push({ x: rand(48, 51), y: 141, life: rand(1.8, 3), age: 0, ph: rand(0, 6.28) });
+      for (let i = steam.length - 1; i >= 0; i--) {
+        const p = steam[i]; p.age += dt;
+        if (p.age > p.life) { steam.splice(i, 1); continue; }
+        p.y -= 7 * dt;
+        const k = p.age / p.life;
+        rx.fillStyle = `rgba(240,232,220,${(0.3 * Math.sin(Math.PI * k)).toFixed(2)})`;
+        rx.fillRect(Math.round(p.x + Math.sin(p.age * 2.2 + p.ph) * (1 + 2.5 * k)), Math.round(p.y), 1, 1);
+      }
+    }
+    if (!R) requestAnimationFrame(frame);
+  }
+  if (!R) requestAnimationFrame(frame);
+
+  /* ---------- sound, generated in the browser ---------- */
+  let ac = null, A = null, running = false;
+  const vol = el => Math.pow(el.value / 100, 1.6);
+  const atime = () => R ? R.t : ac.currentTime;
+
+  function noise(seconds, brown) {
+    const n = Math.floor(ac.sampleRate * seconds), buf = ac.createBuffer(1, n, ac.sampleRate), d = buf.getChannelData(0);
+    let v = 0;
+    for (let i = 0; i < n; i++) { const w = Math.random() * 2 - 1; if (brown) { v = (v + 0.02 * w) / 1.02; d[i] = v * 3.5; } else d[i] = w; }
+    if (brown) { const drift = d[n - 1] - d[0]; for (let i = 0; i < n; i++) d[i] -= drift * i / n; }
+    return buf;
+  }
+  function loop(buf, rate) { const s = ac.createBufferSource(); s.buffer = buf; s.loop = true; s.playbackRate.value = rate || 1; s.start(0, Math.random() * buf.duration); return s; }
+  function filt(type, f, q) { const b = ac.createBiquadFilter(); b.type = type; b.frequency.value = f; b.Q.value = q || 0.7; return b; }
+  function gain(v) { const g = ac.createGain(); g.gain.value = v; return g; }
+  function chain() { for (let i = 1; i < arguments.length; i++) arguments[i - 1].connect(arguments[i]); return arguments[arguments.length - 1]; }
+
+  function buildAudio() {
+    ac = R ? R.ac : new (window.AudioContext || window.webkitAudioContext)();
+    const brown = noise(11, true), white = noise(3, false);
+    const master = gain(0), comp = ac.createDynamicsCompressor();
+    comp.threshold.value = -16; comp.ratio.value = 3; comp.attack.value = 0.02; comp.release.value = 0.6;
+    chain(master, comp, ac.destination);
+    const rainBus = gain(vol(ui.rain)), seaBus = gain(vol(ui.sea)), windBus = gain(vol(ui.wind)), thunderBus = gain(vol(ui.thunder));
+    [rainBus, seaBus, windBus, thunderBus].forEach(b => b.connect(master));
+
+    /* rain: a soft wash plus a brighter patter */
+    chain(loop(white), filt('highpass', 500), filt('lowpass', 5200), gain(0.05), rainBus);
+    const patterG = gain(0.03);
+    chain(loop(white, 0.9), filt('bandpass', 2400, 0.6), patterG, rainBus);
+    chain(loop(brown, 2.2), filt('bandpass', 900, 0.5), gain(0.12), rainBus);
+
+    /* sea: a steady low surge, breakers scheduled on the swell */
+    const surgeG = gain(0.35), surgeF = filt('lowpass', 300);
+    chain(loop(brown, 0.8), surgeF, surgeG, seaBus);
+
+    /* wind */
+    chain(loop(brown, 0.9), filt('lowpass', 160), gain(0.5), windBus);
+    const howlF = filt('bandpass', 420, 0.9), howlG = gain(0.25);
+    chain(loop(brown, 1.25), howlF, howlG, windBus);
+
+    A = { brown, white, master, rainBus, seaBus, windBus, thunderBus, patterG, surgeG, surgeF, howlF, howlG, nextTick: atime() + 0.3, nextWave: Math.ceil(atime() / SWELL) * SWELL };
+  }
+
+  function tap(at) {
+    const src = ac.createBufferSource(); src.buffer = A.white;
+    const f = filt('bandpass', rand(2500, 7000), rand(2, 5));
+    const g = gain(0), peak = Math.pow(Math.random(), 2.5) * 0.18 + 0.01, len = rand(0.004, 0.015);
+    g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(peak, at + 0.001); g.gain.exponentialRampToValueAtTime(0.0005, at + len);
+    chain(src, f, g, A.rainBus);
+    src.start(at, Math.random() * 2.5, len + 0.02);
+  }
+
+  function breaker(at) {
+    const dur = rand(6.5, 8.5), big = rand(0.6, 1);
+    const src = ac.createBufferSource(); src.buffer = A.brown; src.loop = true; src.playbackRate.value = rand(1.6, 2.2);
+    const lp = filt('lowpass', 250, 0.5);
+    lp.frequency.setValueAtTime(250, at); lp.frequency.linearRampToValueAtTime(1300 * big, at + 2.4); lp.frequency.exponentialRampToValueAtTime(260, at + dur);
+    const g = gain(0);
+    g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(0.55 * big, at + 2.4); g.gain.setTargetAtTime(0, at + 2.6, 1.5);
+    chain(src, lp, g, A.seaBus);
+    /* foam hiss as the wave breaks */
+    const hs = ac.createBufferSource(); hs.buffer = A.white; hs.loop = true;
+    const hf = filt('bandpass', 3000, 0.5), hg = gain(0);
+    hg.gain.setValueAtTime(0, at + 1.8); hg.gain.linearRampToValueAtTime(0.06 * big, at + 2.6); hg.gain.setTargetAtTime(0, at + 3, 1.8);
+    chain(hs, hf, hg, A.seaBus);
+    src.start(at, Math.random() * 8); src.stop(at + dur + 1);
+    hs.start(at, Math.random() * 2); hs.stop(at + dur + 1);
+  }
+
+  function thunder(s) {
+    if (!running || s.heard) return;
+    s.heard = true;
+    const at = atime() + Math.max(0, s.t - clock()) + s.delay;
+    const dur = rand(6, 9.5), peak = 1.5 / (1 + s.delay * 0.45);
+    const src = ac.createBufferSource(); src.buffer = A.brown; src.loop = true; src.playbackRate.value = rand(0.5, 0.75);
+    const lp = filt('lowpass', 520, 0.4);
+    lp.frequency.setValueAtTime(rand(380, 620), at); lp.frequency.exponentialRampToValueAtTime(70, at + dur * 0.7);
+    const N = 96, curve = new Float32Array(N); let wob = 1;
+    for (let i = 0; i < N; i++) { const x = i / (N - 1); wob += (rand(0.35, 1.25) - wob) * 0.35; curve[i] = peak * Math.min(1, x / 0.035) * Math.exp(-3.4 * x) * wob * (1 - x); }
+    const g = gain(0); g.gain.setValueCurveAtTime(curve, at, dur);
+    chain(src, lp, g, A.thunderBus);
+    src.start(at, Math.random() * 8); src.stop(at + dur + 0.1);
+  }
+
+  function tick() {
+    const t = clock();
+    if (t >= nextStrike - 0.6) { const at = Math.max(t, nextStrike); strike(at); planNext(at, false); }
+    if (running) {
+      const now = atime(), g = gust(t + 0.6);
+      A.howlG.gain.setTargetAtTime(0.08 + 0.35 * g, now, 0.7);
+      A.howlF.frequency.setTargetAtTime(330 + 330 * g, now, 0.9);
+      A.patterG.gain.setTargetAtTime(0.02 + 0.03 * g, now, 0.8);
+      if (A.nextTick < now) A.nextTick = now + 0.02;
+      while (A.nextTick < now + 2.5) { tap(A.nextTick); A.nextTick += -Math.log(1 - Math.random()) * 0.06; }
+      /* breakers line up with the picture's swell (the roll reaches the shore about 0.8 of a swell in) */
+      while (A.nextWave < now + 3) { if (A.nextWave >= now - 0.1) breaker(A.nextWave + SWELL * 0.55); A.nextWave += SWELL; }
+      sleepTick();
+    }
+  }
+  if (!R) setInterval(tick, 450);
+  planNext(clock(), true);
+
+  /* ---------- controls ---------- */
+  const chip = $('chip'), chipLabel = $('chipLabel'), chipNote = $('chipNote'), panel = $('panel'), hud = $('hud'), invite = $('invite'), dim = $('dim'), soundBtn = $('soundToggle');
+  let sleepAt = 0, fading = false;
+  function setSound(on) {
+    if (on) {
+      if (!ac) buildAudio();
+      if (!R) ac.resume();
+      running = true; fading = false;
+      dim.style.transition = 'opacity 1.5s'; dim.style.opacity = 0;
+      A.master.gain.cancelScheduledValues(atime());
+      A.master.gain.setTargetAtTime(0.9, atime(), 1.2);
+      armSleep();
+    } else if (ac) {
+      running = false;
+      A.master.gain.cancelScheduledValues(atime());
+      A.master.gain.setTargetAtTime(0, atime(), 0.25);
+      setTimeout(() => { if (!running) ac.suspend(); }, 1500);
+    }
+    chip.classList.toggle('on', on);
+    soundBtn.textContent = running ? 'Turn sound off' : 'Turn sound on';
+    label();
+  }
+  function label() {
+    chipLabel.textContent = running ? 'Sound on' : 'Sound off';
+    if (running && sleepAt && !fading) chipNote.textContent = `sleep in ${Math.max(1, Math.ceil((sleepAt - clock()) / 60))} min`;
+    else chipNote.textContent = 'settings';
+  }
+  function armSleep() { const m = +ui.timer.value; sleepAt = m ? clock() + m * 60 : 0; label(); }
+  function sleepTick() {
+    if (!sleepAt) return;
+    label();
+    if (!fading && clock() >= sleepAt - 45) {
+      fading = true;
+      A.master.gain.cancelScheduledValues(atime());
+      A.master.gain.setTargetAtTime(0, atime(), 12);
+      dim.style.transition = 'opacity 45s linear'; dim.style.opacity = 0.92;
+    }
+    if (clock() >= sleepAt) { sleepAt = 0; ui.timer.value = '0'; setSound(false); }
+  }
+
+  $('begin').addEventListener('click', () => { invite.classList.add('gone'); setSound(true); wake(); });
+  invite.addEventListener('click', e => { if (e.target === invite) invite.classList.add('gone'); });
+  chip.addEventListener('click', () => {
+    const open = panel.hidden;
+    panel.hidden = !open; chip.setAttribute('aria-expanded', String(open));
+    if (open) invite.classList.add('gone');
+  });
+  soundBtn.addEventListener('click', () => { invite.classList.add('gone'); setSound(!running); });
+  const bus = { rain: 'rainBus', sea: 'seaBus', wind: 'windBus', thunder: 'thunderBus' };
+  Object.keys(bus).forEach(k => ui[k].addEventListener('input', () => { store.set(k, ui[k].value); if (A) A[bus[k]].gain.setTargetAtTime(vol(ui[k]), atime(), 0.05); }));
+  ui.strikes.addEventListener('change', () => { store.set('strikes', ui.strikes.value); planNext(clock(), false); });
+  ui.timer.addEventListener('change', () => { if (running) armSleep(); });
+  $('flashNow').addEventListener('click', () => strike(clock() + 0.05));
+  $('fs').addEventListener('click', () => {
+    const el = document.documentElement;
+    const p = document.fullscreenElement ? document.exitFullscreen() : (el.requestFullscreen ? el.requestFullscreen() : null);
+    if (p && p.catch) p.catch(() => {});
+  });
+
+  let idleTimer = 0;
+  function wake() {
+    hud.classList.remove('idle');
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => { if (panel.hidden) hud.classList.add('idle'); }, 5000);
+  }
+  ['pointermove', 'pointerdown', 'keydown', 'focusin'].forEach(ev => addEventListener(ev, wake));
+  wake();
+  if (R) { invite.hidden = true; hud.hidden = true; Object.assign(R, { frame, tick, strike, start: () => setSound(true), ready }); }
+})();
+</script>
+<!--/PAGE-->
+</body>
+</html>

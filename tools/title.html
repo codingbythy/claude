@@ -1,0 +1,18 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;600&display=swap">
+<style>html,body{margin:0;background:transparent;width:1920px;height:1080px;overflow:hidden}
+.shade{position:absolute;left:0;bottom:0;width:1500px;height:520px;background:radial-gradient(ellipse 1100px 420px at 380px 400px,rgba(8,6,10,.82),rgba(8,6,10,0) 100%)}
+.t{position:absolute;left:96px;bottom:120px;color:#f3e6cf;font-family:"Pixelify Sans","DejaVu Sans Mono",monospace;text-shadow:0 5px 0 rgba(0,0,0,.65)}
+h1{font-size:92px;line-height:1.02;margin:0 0 22px;font-weight:600}
+h1 span{color:var(--accent,#f2a65a)}
+p{font-size:38px;margin:0;font-weight:500;color:#e9d9bd;letter-spacing:.02em}</style></head>
+<body><div class="shade"></div><div class="t"><h1><span id="l1"></span><br><span id="l2"></span></h1><p id="sub"></p></div>
+<script>
+// Title card shared by every scene. Query: ?l1=first line&l2=accent line&sub=subtitle&accent=%23hex
+const q = new URLSearchParams(location.search);
+document.getElementById('l1').textContent = q.get('l1') || '';
+document.getElementById('l1').style.color = '#f3e6cf';
+document.getElementById('l2').textContent = q.get('l2') || '';
+document.getElementById('sub').textContent = q.get('sub') || '';
+if (q.get('accent')) document.documentElement.style.setProperty('--accent', q.get('accent'));
+</script></body></html>
