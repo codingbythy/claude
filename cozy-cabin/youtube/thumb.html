@@ -1,0 +1,28 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@600;700&display=swap">
+<style>
+html,body{margin:0;width:1280px;height:720px;overflow:hidden;background:#0a0d18}
+.bg{position:absolute;inset:0;background:url(bg.png) center/cover}
+canvas{position:absolute;left:0;top:0;width:1280px;height:720px;image-rendering:pixelated}
+.shade{position:absolute;left:0;right:0;bottom:0;height:330px;background:linear-gradient(to top,rgba(10,6,4,.92) 0%,rgba(10,6,4,.7) 45%,rgba(10,6,4,0) 100%)}
+.txt{position:absolute;left:52px;bottom:40px;font-family:"Pixelify Sans",monospace;color:#f6ead2;text-shadow:0 6px 0 rgba(0,0,0,.7)}
+.big{font-size:118px;line-height:.95;font-weight:700;letter-spacing:.01em}
+.big span{color:#f2a65a}
+.sub{font-size:40px;font-weight:600;color:#eadcc2;margin-top:14px;letter-spacing:.03em}
+.badge{position:absolute;top:34px;left:40px;font-family:"Pixelify Sans",monospace;font-weight:700;font-size:54px;color:#2a1408;background:#f2a65a;padding:6px 20px 10px;box-shadow:0 6px 0 rgba(0,0,0,.55)}
+</style></head><body>
+<div class="bg"></div><canvas id="c" width="320" height="180"></canvas><div class="shade"></div>
+<div class="badge">2 HOURS</div>
+<div class="txt"><div class="big">SNOWSTORM<br><span>CABIN</span></div><div class="sub">crackling fire · wind · distant thunder</div></div>
+<script>
+// window glass region in 1280x720 thumbnail coords (from the 1920 frame scaled by 2/3), drawn at quarter resolution
+const c=document.getElementById('c').getContext('2d');
+const g=c.createRadialGradient(225,70,5,225,70,110);g.addColorStop(0,'rgba(200,215,255,.32)');g.addColorStop(1,'rgba(200,215,255,0)');
+c.fillStyle=g;c.fillRect(150,5,170,110);
+c.save();c.beginPath();c.rect(203,9,55,40);c.clip();let x=236,y=9;const pts=[[x,y]];const r=[3,-2,4,-3,2,-4,3,-1,4,-3,2];let i=0;
+while(y<52){y+=4;x+=r[i++%r.length];pts.push([x,y]);}
+function seg(a,b,w,col){c.fillStyle=col;const n=Math.max(Math.abs(b[0]-a[0]),Math.abs(b[1]-a[1]));for(let k=0;k<=n;k++)c.fillRect(Math.round(a[0]+(b[0]-a[0])*k/n)-(w>>1),Math.round(a[1]+(b[1]-a[1])*k/n),w,1);}
+for(let k=1;k<pts.length;k++)seg(pts[k-1],pts[k],3,'rgba(190,210,255,.45)');
+for(let k=1;k<pts.length;k++)seg(pts[k-1],pts[k],1,'#ffffff');
+const f=pts[5];seg(f,[f[0]+6,f[1]+5],1,'#fff');seg([f[0]+6,f[1]+5],[f[0]+9,f[1]+12],1,'#f0f4ff');c.restore();
+</script></body></html>
