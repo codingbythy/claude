@@ -1,0 +1,37 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@600;700&display=swap">
+<style>
+html,body{margin:0;width:1280px;height:720px;overflow:hidden;background:#0a0d14}
+.bg{position:absolute;left:0;top:0;width:1280px;height:720px;background-repeat:no-repeat}
+canvas{position:absolute;left:0;top:0;width:1280px;height:720px;image-rendering:pixelated}
+.shade{position:absolute;left:0;top:0;width:1280px;height:720px;background:radial-gradient(ellipse 820px 400px at 300px 150px,rgba(8,8,10,.86) 0%,rgba(8,8,10,.6) 45%,rgba(8,8,10,0) 100%)}
+.txt{position:absolute;left:44px;top:132px;font-family:"Pixelify Sans",monospace;color:#f6ead2;text-shadow:0 6px 0 rgba(0,0,0,.7)}
+.big{font-size:104px;line-height:.95;font-weight:700}
+.sub{font-size:36px;font-weight:600;color:#eadcc2;margin-top:14px;letter-spacing:.03em}
+.badge{position:absolute;top:30px;left:40px;font-family:"Pixelify Sans",monospace;font-weight:700;font-size:50px;color:#22140a;padding:6px 18px 10px;box-shadow:0 6px 0 rgba(0,0,0,.55)}
+</style></head><body>
+<div class="bg" id="bg"></div><canvas id="c" width="320" height="180"></canvas><div class="shade"></div>
+<div class="badge" id="badge">2 HOURS</div>
+<div class="txt"><div class="big"><span id="l1"></span><br><span id="l2"></span></div><div class="sub" id="sub"></div></div>
+<script>
+// Config in the hash: {bg, crop:[x,y,w] in the 1920x1080 frame, l1, l2, sub, accent, bolt:[x0,y0,w,h] on the 320x180 grid or null}
+const C = JSON.parse(decodeURIComponent(location.hash.slice(1)));
+const s = 1280 / C.crop[2], bg = document.getElementById('bg');
+bg.style.backgroundImage = `url(${C.bg})`; bg.style.backgroundSize = `${1920 * s}px ${1080 * s}px`;
+bg.style.backgroundPosition = `${-C.crop[0] * s}px ${-C.crop[1] * s}px`;
+if (C.shade !== undefined) document.querySelector('.shade').style.opacity = C.shade;
+for (const k of ['l1', 'l2', 'sub']) document.getElementById(k).textContent = C[k];
+document.getElementById('l2').style.color = C.accent; document.getElementById('badge').style.background = C.accent;
+if (C.bolt) {
+  const c = document.getElementById('c').getContext('2d'), [bx, by, bw, bh] = C.bolt;
+  const g = c.createRadialGradient(bx + bw / 2, by + bh / 2, 4, bx + bw / 2, by + bh / 2, bw);
+  g.addColorStop(0, 'rgba(200,215,255,.3)'); g.addColorStop(1, 'rgba(200,215,255,0)'); c.fillStyle = g; c.fillRect(bx - 20, by, bw + 40, bh);
+  c.save(); c.beginPath(); c.rect(bx, by, bw, bh); c.clip();
+  let x = bx + bw * 0.55, y = by; const pts = [[x, y]]; const r = [3, -2, 4, -3, 2, -4, 3, -1, 4, -3, 2]; let i = 0;
+  while (y < by + bh - 4) { y += 4; x += r[i++ % r.length]; pts.push([x, y]); }
+  const seg = (a, b, w, col) => { c.fillStyle = col; const n = Math.max(Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1])); for (let k = 0; k <= n; k++) c.fillRect(Math.round(a[0] + (b[0] - a[0]) * k / n) - (w >> 1), Math.round(a[1] + (b[1] - a[1]) * k / n), w, 1); };
+  for (let k = 1; k < pts.length; k++) seg(pts[k - 1], pts[k], 3, 'rgba(190,210,255,.45)');
+  for (let k = 1; k < pts.length; k++) seg(pts[k - 1], pts[k], 1, '#fff');
+  const f = pts[4]; seg(f, [f[0] + 6, f[1] + 5], 1, '#fff'); seg([f[0] + 6, f[1] + 5], [f[0] + 9, f[1] + 12], 1, '#f0f4ff'); c.restore();
+}
+</script></body></html>
