@@ -14,6 +14,7 @@ loop *= min(0.89/abs(loop).max(), RMS/np.sqrt((loop**2).mean()))
 st = np.repeat((loop*32767).astype('<i2')[:, None], 2, axis=1)
 w = wave.open(D + '/loop.wav', 'wb'); w.setnchannels(2); w.setsampwidth(2); w.setframerate(SR); w.writeframes(st.tobytes()); w.close()
 PY
+[ -f "$D/raw.mp4" ] || exit 0   # sound-only render (render-audio.js): no picture to loop
 ffmpeg -y -loglevel error -i "$D/raw.mp4" -filter_complex \
   "[0:v]split=3[a][b][c];[a]trim=0:$X,setpts=PTS-STARTPTS[head];[b]trim=$X:$L,setpts=PTS-STARTPTS[mid];[c]trim=$L:$((L+X)),setpts=PTS-STARTPTS[tail];[tail][head]xfade=transition=fade:duration=$X:offset=0[xf];[mid][xf]concat=n=2:v=1[v]" \
   -map "[v]" -r 30 -c:v libx264 -preset slow -crf 19 -g 60 -pix_fmt yuv420p -movflags +faststart "$D/loopv.mp4"
