@@ -12,3 +12,12 @@ Shared by every scene (`cozy-cabin/`, `lighthouse-room/`, ...). Each scene page 
 
 The kit's `build.sh` (copied from `kit-build.sh`) assembles the long video; the Colab notebook in
 `video-kit/` runs it in Google's cloud and saves the result to Google Drive.
+
+## Music that doesn't repeat
+
+`music-long.py <seconds> out.wav <seed> <transpose> <rms> <slow>` composes a bed for the whole video:
+a run of 5–9 minute pieces, each with its own chord progression, key, register and pace, with
+occasional short pad-only interludes, blended into each other over 10 seconds. A kit that contains
+`music-long.py` and `music.conf` (`seed transpose rms slow`) composes fresh music for whatever length
+you build; without them `build.sh` loops `music.flac`. `rms` sets how loud the music sits against the
+ambience (the ambience level is the 4th argument of `make-loop.sh`).
