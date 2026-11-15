@@ -17,7 +17,7 @@ const STRIKES = [17, 61, 96, 141].filter(t => t < L - 15).map(t => t + PRE);
   await p.goto(url);
   await p.waitForFunction(() => window.__render.frame && document.getElementById('base').complete && (!window.__render.ready || window.__render.ready()));
   await p.waitForTimeout(800);
-  await p.evaluate(() => { const s = document.getElementById('strikes'); s.value = 'off'; s.dispatchEvent(new Event('change')); try { localStorage.clear(); } catch (e) {} window.__render.start(); });
+  await p.evaluate(() => { const s = document.getElementById('strikes'); if (s) { s.value = 'off'; s.dispatchEvent(new Event('change')); } try { localStorage.clear(); } catch (e) {} window.__render.start(); });
   const ff = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(FPS), '-c:v', 'mjpeg', '-i', '-', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '10', '-pix_fmt', 'yuv420p', out + '/raw.mp4'], { stdio: ['pipe', 'inherit', 'inherit'] });
   const N = Math.round(TOTAL * FPS); let nextTick = 0, si = 0; const t0 = Date.now();
   for (let i = 0; i < N; i++) {
