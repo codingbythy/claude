@@ -1,10 +1,12 @@
 import numpy as np, wave
 import sys
-# Usage: make-music.py [seed=7] [transpose=0] [out=music.wav] [ambience.wav to rotate=../vid/loop.wav]
+# Usage: make-music.py [seed=7] [transpose=0] [out=music.wav] [ambience.wav to rotate, or none] [rms=0.04] [slow=1.0]
 SEED=int(sys.argv[1]) if len(sys.argv)>1 else 7
 TR=int(sys.argv[2]) if len(sys.argv)>2 else 0
 OUT=sys.argv[3] if len(sys.argv)>3 else 'music.wav'
-AMB=sys.argv[4] if len(sys.argv)>4 else '../vid/loop.wav'
+AMB=sys.argv[4] if len(sys.argv)>4 else 'none'
+RMS=float(sys.argv[5]) if len(sys.argv)>5 else 0.04     # loudness of the music bed
+SLOW=float(sys.argv[6]) if len(sys.argv)>6 else 1.0     # >1 = slower, sparser playing
 SR=24000; DUR=720; N=SR*DUR; rng=np.random.default_rng(SEED)
 L=np.zeros(N); Rr=np.zeros(N)
 def hz(m): return 440*2**((m+TR-69)/12)
@@ -26,7 +28,7 @@ def pad(m,dur,amp):
     s=np.sin(2*np.pi*f*1.0016*t)+np.sin(2*np.pi*f*0.9984*t+1.3)+0.22*np.sin(2*np.pi*2*f*t+0.5)
     e=np.sin(np.pi*t/dur)**1.5
     return s*e*amp*(1+0.12*np.sin(2*np.pi*0.11*t+rng.uniform(0,6.28)))
-CH=12.0
+CH=12.0*SLOW
 prog=[[50,57,62,66],[47,54,57,62],[43,50,59,66],[45,52,57,61],
       [50,57,62,66],[42,49,57,64],[43,50,59,62],[45,52,59,64]]
 penta=[62,64,66,69,71,74,76,78,81]
@@ -45,7 +47,7 @@ while t<DUR-0.5:
         add(piano(prog[int(t/CH)%len(prog)][0]-0 ,rng.uniform(0.3,0.5)), int(t*SR), 0.5)
     if rng.random()<0.28:
         p2=int(np.clip(pos+rng.choice([-2,-1,1,2]),0,len(penta)-1)); add(piano(penta[p2],rng.uniform(0.25,0.5)), int((t+0.75)*SR), rng.uniform(0.25,0.75))
-    t+=rng.choice([1.5,3,3,3,4.5,4.5,6])
+    t+=rng.choice([1.5,3,3,3,4.5,4.5,6])*SLOW
 # circular reverb
 def rev(x,seed):
     r=np.random.default_rng(seed); n=int(3.8*SR); t=np.arange(n)/SR
@@ -54,10 +56,11 @@ def rev(x,seed):
     pad_ir=np.zeros(N); pad_ir[:n]=ir
     return np.fft.irfft(np.fft.rfft(x)*np.fft.rfft(pad_ir),N)
 L=L+0.9*rev(L,1); Rr=Rr+0.9*rev(Rr,2)
-st=np.stack([L,Rr],1); st*=0.04/np.sqrt((st**2).mean())
+st=np.stack([L,Rr],1); st*=RMS/np.sqrt((st**2).mean())
 print('peak',abs(st).max(),'rms',np.sqrt((st**2).mean()))
 st=np.clip(st,-0.98,0.98)
 w=wave.open(OUT,'wb'); w.setnchannels(2); w.setsampwidth(2); w.setframerate(SR); w.writeframes((st*32767).astype('<i2').tobytes()); w.close()
 # rotate ambience by 10 s
-a=wave.open(AMB); d=np.frombuffer(a.readframes(a.getnframes()),'<i2').reshape(-1,2); d=np.roll(d,-10*48000,axis=0)
-w=wave.open('amb_rot.wav','wb'); w.setnchannels(2); w.setsampwidth(2); w.setframerate(48000); w.writeframes(d.tobytes()); w.close()
+if AMB!='none':
+  a=wave.open(AMB); d=np.frombuffer(a.readframes(a.getnframes()),'<i2').reshape(-1,2); d=np.roll(d,-10*48000,axis=0)
+  w=wave.open('amb_rot.wav','wb'); w.setnchannels(2); w.setsampwidth(2); w.setframerate(48000); w.writeframes(d.tobytes()); w.close()

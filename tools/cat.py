@@ -157,7 +157,8 @@ def rest_pose(t):
 
 def side_pose(m_eye, x, feet, face_left, t, shadow):
     m, eye = m_eye
-    return dict(kind='side', spr=shade(m, eye, face_left, flash_at(t), not face_left), x=x, feet=feet, shadow=shadow)
+    return dict(kind='side', spr=shade(m, eye, face_left, flash_at(t), not face_left), x=x, feet=feet, shadow=shadow,
+                hide_x=SCENE['bed_edge'] if feet == SCENE['floor'] else None)
 
 
 WALK = 12.0   # sprite pixels per second
@@ -204,6 +205,165 @@ def outro_pose(t):
 POSES = {'intro': intro_pose, 'loop': lambda t: rest_pose(t), 'outro': outro_pose}
 
 
+# ---------------------------------------------------------------------------------------------
+# Glasshouse (episode 3): a rounder, cuter cat that walks in from behind the fern pot and curls
+# up asleep on the floor in front of the warm radiator.
+# ---------------------------------------------------------------------------------------------
+GH = dict(
+    pot_edge=43,                     # the fern pot hides the cat left of scene x 172
+    start_x=8, stop_x=150,           # sprite left edge where the walk starts (hidden) and stops
+    region=(40, 860, 1000, 220),     # overlay region in the video
+)
+GH_BODY = np.array([22, 19, 27]); GH_RIM = np.array([104, 78, 56]); GH_COOL = np.array([60, 66, 88])
+GH_EYE = np.array([150, 205, 96]); GH_SHINE = np.array([236, 244, 226]); GH_NOSE = np.array([214, 128, 140])
+Z = 1.45                             # the cat is nearer the camera here, so a little bigger
+
+
+def gh_feet(x):
+    """Feet line along the floor in front of the radiator (sprite px), following the room's perspective."""
+    cx = (x + 17) * 4
+    return int(round((915 - 0.138 * (cx - 150)) / 4))
+
+
+def cute_side(phase=None, pose='walk', look_up=0, z=Z):
+    """Side view facing right: big round head, short body, stubby legs. Returns (mask, features)."""
+    w, h = int(31 * z) + 1, int(17 * z) + 1
+    m = blank(w, h)
+    by = (10.6 if pose != 'crouch' else 12.4) * z
+    fill_ellipse(m, 12.0 * z, by, 7.6 * z, 3.7 * z)
+    hy = (7.0 - look_up + (1.8 if pose == 'crouch' else 0)) * z
+    hx = 22.0 * z
+    fill_ellipse(m, hx, hy, 4.3 * z, 3.9 * z)
+    fill_tri(m, [(hx - 3.6 * z, hy - 1.4 * z), (hx - 3.1 * z, hy - 6.2 * z), (hx - 0.6 * z, hy - 3.0 * z)])
+    fill_tri(m, [(hx + 0.6 * z, hy - 3.0 * z), (hx + 3.0 * z, hy - 6.2 * z), (hx + 3.8 * z, hy - 1.2 * z)])
+    feats = {'eye': (int(hx + 1.6 * z), int(hy - 0.4 * z)), 'nose': (int(hx + 4.0 * z), int(hy + 0.8 * z))}
+    foot = h - 0.4
+    if pose == 'walk':
+        for hip, off in ((7.2, 0.0), (9.4, math.pi), (15.0, math.pi), (17.2, 0.0)):
+            s = math.sin(phase + off)
+            line(m, hip * z, by + 2.2 * z, hip * z + 1.4 * z * s, foot, width=2 if z > 1.1 else 1)
+    else:
+        line(m, 6.0 * z, foot, 10.0 * z, foot); line(m, 14.0 * z, foot, 18.0 * z, foot)
+    t0 = (4.8 * z, by - 1.0 * z)
+    pts = [t0, (2.6 * z, by - 3.0 * z), (1.8 * z, by - 5.8 * z), (2.8 * z, by - 8.0 * z), (4.2 * z, by - 8.4 * z)]
+    for a, b in zip(pts, pts[1:]):
+        line(m, a[0], a[1], b[0], b[1], width=2 if z > 1.1 else 1)
+    return m, feats
+
+
+def cute_curl(breath=0, ear=0, tail=0, awake=0, z=Z):
+    """Curled up asleep, side view: a round body, head resting at the front, tail tip tucked under the chin."""
+    w, h = int(30 * z) + 1, int(16 * z) + 1
+    m = blank(w, h)
+    bot = h - 0.5
+    fill_ellipse(m, 11.8 * z, bot - 5.0 * z, 8.8 * z, (5.0 + 0.35 * breath) * z)
+    m[int(bot):, int(5 * z):int(19 * z)] = 1                           # resting flat on the floor
+    hx, hy = 20.6 * z, bot - (5.2 + 2.0 * awake) * z
+    head = blank(w, h)
+    fill_ellipse(head, hx, hy, 4.5 * z, 4.0 * z)
+    fill_tri(head, [(hx - 3.8 * z, hy - 1.0 * z), (hx - 3.2 * z - ear * z, hy - 6.8 * z), (hx - 0.4 * z, hy - 3.2 * z)])
+    fill_tri(head, [(hx + 0.4 * z, hy - 3.2 * z), (hx + 3.2 * z, hy - 6.8 * z), (hx + 4.0 * z, hy - 0.8 * z)])
+    m |= head
+    # tail wraps round the front and its tip curls up under the chin
+    line(m, 14.0 * z, bot - 0.2, 25.0 * z, bot - 0.2, width=1)
+    line(m, 25.0 * z, bot - 0.2, 26.4 * z, bot - (1.4 + tail) * z, width=1)
+    feats = {'nose': (int(hx + 4.2 * z), int(hy + 0.8 * z))}
+    # a faint line where the cheek meets the body, so the head reads as its own shape
+    hp = np.pad(head, 1)
+    edge = head & ((hp[:-2, 1:-1] == 0) | (hp[2:, 1:-1] == 0) | (hp[1:-1, :-2] == 0))
+    ys, xs = np.nonzero(edge)
+    feats['seam'] = [(x, y) for x, y in zip(xs, ys) if x < hx - 1.5 * z and y > hy - 1.0 * z]
+    if awake:
+        feats['eye'] = (int(hx + 1.6 * z), int(hy - 0.2 * z))
+    else:
+        feats['closed'] = [(int(hx + 0.8 * z), int(hy)), (int(hx + 1.8 * z), int(hy + 0.5 * z)), (int(hx + 2.8 * z), int(hy))]
+    return m, feats
+
+
+def cute_shade(mask, feats, flip):
+    h, w = mask.shape
+    pad = np.pad(mask, 1)
+    top = mask & (pad[:-2, 1:-1] == 0)
+    sides = mask & ((pad[1:-1, :-2] == 0) | (pad[1:-1, 2:] == 0)) & ~top
+    rgb = np.zeros((h, w, 3)); rgb[:] = GH_BODY
+    rgb[top.astype(bool)] = GH_RIM          # warm light from the radiator and the lamp on the top edges
+    rgb[sides.astype(bool)] = GH_COOL       # cooler light from the glass on the sides
+    mask = mask.copy()
+    def px(p, c):
+        x, y = p
+        if 0 <= y < h and 0 <= x < w:
+            rgb[y, x] = c; mask[y, x] = 1
+    if 'eye' in feats:
+        px(feats['eye'], GH_EYE); px((feats['eye'][0], feats['eye'][1] - 1), GH_SHINE)
+    for p in feats.get('seam', []):
+        if 0 <= p[1] < h and 0 <= p[0] < w and not top[p[1], p[0]]:
+            rgb[p[1], p[0]] = GH_BODY * 0.5 + GH_COOL * 0.5
+    for p in feats.get('closed', []):
+        px(p, GH_RIM)
+    if 'nose' in feats:
+        px(feats['nose'], GH_NOSE)
+    rgba = np.zeros((h, w, 4), np.uint8); rgba[..., :3] = rgb; rgba[..., 3] = mask * 255
+    return rgba[:, ::-1] if flip else rgba
+
+
+def gh_side(m_f, x, face_left, shadow=True):
+    m, f = m_f
+    return dict(kind='side', spr=cute_shade(m, f, face_left), x=x, feet=gh_feet(x), shadow='floor' if shadow else None, hide_x=GH['pot_edge'])
+
+
+def gh_rest(t, awake=0):
+    t = t % LOOP
+    breath = 1 if (t % 4.5) < 2.25 else 0
+    ear = 1 if 9.0 <= (t % 20.0) < 9.35 else 0
+    tail = 1 if 4.0 <= (t % 15.0) < 4.6 else 0
+    m, f = cute_curl(breath, ear, tail, awake)
+    x = GH['stop_x']
+    return dict(kind='side', spr=cute_shade(m, f, False), x=x, feet=gh_feet(x), shadow='floor', hide_x=None)
+
+
+GH_WALK = 13.0
+
+
+def gh_intro(t):
+    S = GH
+    t_walk = (S['stop_x'] - S['start_x']) / GH_WALK
+    if t < 9.0:
+        return None
+    if t < 9.0 + t_walk:
+        x = S['start_x'] + GH_WALK * (t - 9.0)
+        return gh_side(cute_side(phase=(t - 9.0) * 2 * math.pi * 1.7), round(x), False)
+    t1 = 9.0 + t_walk
+    if t < t1 + 1.2:     # turns round twice before settling, the way cats do
+        flip = int((t - t1) / 0.4) % 2 == 0
+        return gh_side(cute_side(pose='crouch'), S['stop_x'], flip)
+    if t < t1 + 2.0:
+        return gh_side(cute_side(pose='crouch', look_up=0), S['stop_x'], False)
+    return gh_rest(t + 10.0)
+
+
+def gh_outro(t):
+    S = GH
+    if t < 5.0:
+        return gh_rest(t)
+    if t < 6.4:
+        return gh_rest(t, awake=1)
+    if t < 6.9:
+        return gh_side(cute_side(pose='crouch'), S['stop_x'], True)
+    x = S['stop_x'] - GH_WALK * 1.1 * (t - 6.9)
+    if x + 34 < S['pot_edge']:
+        return None
+    return gh_side(cute_side(phase=(t - 6.9) * 2 * math.pi * 1.8), round(x), True)
+
+
+SCENES = {
+    'lighthouse-room': dict(poses=POSES, region=REG),
+    'glasshouse': dict(poses={'intro': gh_intro, 'loop': lambda t: gh_rest(t), 'outro': gh_outro}, region=GH['region']),
+}
+import os
+_cfg = SCENES[os.environ.get('CAT_SCENE', 'lighthouse-room')]
+POSES = _cfg['poses']; REG = _cfg['region']
+
+
 def vx(X):   # sprite-pixel column -> video x
     return int(round(X * K))
 
@@ -226,14 +386,15 @@ def render(pose):
             a, b, c, d = vx(X) - x0, vx(X + 1) - x0, vy(pose['feet'] + 1) - y0, vy(pose['feet'] + 2) - y0
             if 0 <= a < w and 0 <= c < h:
                 out[c:d, a:b] = (0, 0, 0, 70)
+    hide = pose.get('hide_x')
     for Y in range(sh):
         for X in range(sw):
             px = spr[Y, X]
             if px[3] == 0:
                 continue
             gx = pose['x'] + X
-            if pose['kind'] == 'side' and pose['feet'] == SCENE['floor'] and gx < SCENE['bed_edge']:
-                continue          # hidden behind the bed's foot post
+            if pose.get('hide_x') is not None and gx < pose['hide_x']:
+                continue          # hidden behind something in the room (bed post, plant pot)
             a, b = vx(gx) - x0, vx(gx + 1) - x0
             c, d = vy(top + Y) - y0, vy(top + Y + 1) - y0
             if b <= 0 or d <= 0 or a >= w or c >= h:
