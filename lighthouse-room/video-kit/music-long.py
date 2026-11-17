@@ -89,7 +89,7 @@ def make_piece(k, length, interlude):
     CH = 12.0 * slow
     for c in range(int(length / CH) + 1):
         for i, m in enumerate(prog[c % len(prog)]):
-            add(pad(rng, hz(m, key), CH * 1.55, 0.05 if not interlude else 0.065), (c * CH - CH * 0.275) * SR if (c or k == 0) else 0, 0.3 + 0.4 * (i / 3))
+            add(pad(rng, hz(m, key), CH * 1.55, 0.05 if not interlude else 0.065), ((c * CH - CH * 0.275) if c else (-CH * 0.7 if k == 0 else 0)) * SR, 0.3 + 0.4 * (i / 3))   # first chord of the video starts at full swell
     t = 0.4 if k == 0 else rng.uniform(2, 5); pos = int(rng.integers(2, 6))   # the video opens on a note
     while t < length - 4:
         shape = math.sin(math.pi * min(1.0, t / length)) ** 0.8         # sparse start, fuller middle, thin ending
