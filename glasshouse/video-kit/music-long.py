@@ -6,7 +6,8 @@ Builds a sequence of pieces, each with its own chord progression, key, register,
 overlaps them so each one dissolves into the next. Same instruments as the loop version
 (soft piano and warm pads), so every episode still sounds like the same channel.
 
-Usage: music-long.py <seconds> <out.wav> [seed=21] [transpose=0] [rms=0.075] [slow=1.0]
+Usage: music-long.py <seconds> <out.wav> [seed=21] [transpose=0] [rms=0.075] [slow=1.0] [bpm]
+(bpm, if given, holds the pulse near that tempo: one beat is the 1.5 s step of the default grid)
 Needs only numpy. Writes 24 kHz stereo WAV, streamed piece by piece to keep memory low.
 """
 import sys, wave, math
@@ -17,6 +18,11 @@ SEED = int(sys.argv[3]) if len(sys.argv) > 3 else 21
 TR = int(sys.argv[4]) if len(sys.argv) > 4 else 0
 RMS = float(sys.argv[5]) if len(sys.argv) > 5 else 0.075
 SLOW = float(sys.argv[6]) if len(sys.argv) > 6 else 1.0
+import os
+NOTES = [] if os.environ.get('MUSIC_NOTES') else None   # set MUSIC_NOTES=1 to print the first piece's melody timing
+BPM = float(sys.argv[7]) if len(sys.argv) > 7 else 0.0   # optional: fix the pulse (one beat = 1.5 s of the grid) instead of SLOW
+if BPM > 0:
+    SLOW = 40.0 / BPM
 SR = 24000
 XF = 10.0                       # seconds each piece overlaps the next
 master = np.random.default_rng(SEED)
@@ -71,7 +77,7 @@ def make_piece(k, length, interlude):
     rng = np.random.default_rng(SEED * 1000 + k)
     key = KEYS[(k + SEED) % len(KEYS)]
     prog = BANK[int(rng.integers(len(BANK)))] if not interlude else BANK[5]
-    slow = SLOW * rng.uniform(0.9, 1.35) * (1.4 if interlude else 1.0)
+    slow = SLOW * (rng.uniform(0.97, 1.03) if BPM > 0 else rng.uniform(0.9, 1.35)) * (1.4 if interlude else 1.0)
     low = rng.random() < 0.35                                   # some pieces sit an octave lower and warmer
     n = int((length + 8) * SR)
     L = np.zeros(n); R = np.zeros(n)
@@ -96,7 +102,8 @@ def make_piece(k, length, interlude):
         if k == 0 and t < 90:
             shape = max(shape, 0.7)                                     # the video opens on real music, not a slow fade
         dens = (0.25 if interlude else 0.5) + (0.2 if interlude else 0.5) * shape
-        if rng.random() < dens:
+        opening = k == 0 and t < 40                                     # the first 40 s play steadily, no pauses
+        if opening or rng.random() < dens:
             chord = set(x % 12 for x in prog[int(t / CH) % len(prog)])
             for _ in range(6):
                 cand = int(np.clip(pos + rng.integers(-2, 3), 0, len(PENTA) - 1))
@@ -104,12 +111,13 @@ def make_piece(k, length, interlude):
                     pos = cand; break
             mel = PENTA[pos] - (12 if low else 0)
             add(piano(rng, hz(mel, key), rng.uniform(0.35, 0.75)), t * SR, rng.uniform(0.25, 0.75))
+            if NOTES is not None and k == 0: NOTES.append(round(float(t), 2))
             if rng.random() < 0.3 * (0.5 + shape):
                 add(piano(rng, hz(prog[int(t / CH) % len(prog)][0], key), rng.uniform(0.3, 0.5)), t * SR, 0.5)
             if not interlude and rng.random() < 0.3 * shape:
                 p2 = int(np.clip(pos + rng.choice([-2, -1, 1, 2]), 0, len(PENTA) - 1))
                 add(piano(rng, hz(PENTA[p2] - (12 if low else 0), key), rng.uniform(0.25, 0.5)), (t + 0.75 * slow) * SR, rng.uniform(0.25, 0.75))
-        t += rng.choice([1.5, 3, 3, 3, 4.5, 4.5, 6]) * slow
+        t += (rng.choice([1.5, 1.5, 3]) if opening else rng.choice([1.5, 3, 3, 3, 4.5, 4.5, 6])) * slow
     L = reverb(L, 1); R = reverb(R, 2)
     st = np.stack([L, R], 1)
     body = st[int(10 * SR):int((length - 10) * SR)]
@@ -140,3 +148,8 @@ while written < total:
     written += len(out); k += 1
 w.close()
 print('\n'.join(log))
+if NOTES is not None:
+    first = [x for x in NOTES if x < 60]
+    print('melody notes in the first minute:', first)
+    g = np.diff(first)
+    if len(g): print('average gap %.2f s, %d notes in the first minute' % (g.mean(), len(first)))
