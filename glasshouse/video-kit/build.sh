@@ -17,7 +17,7 @@ if [ -f music-long.py ] && [ -f music.conf ] && python3 -c "import numpy" 2>/dev
 fi
 { echo "file intro.mp4"; for _ in $(seq "$N"); do echo "file loop.mp4"; done; echo "file outro.mp4"; } > list.txt
 ffmpeg -y -loglevel error -stream_loop -1 -i ambience.flac -stream_loop -1 -i "$MUSIC" -filter_complex \
-  "[0:a]aresample=48000,pan=stereo|c0=c0|c1=c0[amb];[1:a]aresample=48000[m];[amb][m]amix=inputs=2:normalize=0,afade=in:st=0:d=2.5,afade=out:st=$((TOTAL - 14)):d=14[a]" \
+  "[0:a]aresample=48000,pan=stereo|c0=c0|c1=c0[amb];[1:a]aresample=48000[m];[amb][m]amix=inputs=2:normalize=0,afade=in:st=0:d=0.5,afade=out:st=$((TOTAL - 14)):d=14[a]" \
   -map "[a]" -t "$TOTAL" -c:a aac -b:a 160k audio.m4a
 ffmpeg -y -loglevel error -f concat -safe 0 -i list.txt -i audio.m4a -map 0:v -map 1:a -c copy -shortest -movflags +faststart "$OUT"
 rm -f list.txt audio.m4a music-long.wav
