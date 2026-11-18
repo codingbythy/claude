@@ -10,9 +10,9 @@ TOTAL=$((170 + N * 180 + 30))
 # whole length (a few minutes of work); otherwise loop music.flac.
 MUSIC=music.flac
 if [ -f music-long.py ] && [ -f music.conf ] && python3 -c "import numpy" 2>/dev/null; then
-  read -r SEED TR RMS SLOW BPM < music.conf
+  read -r SEED TR RMS SLOW BPM STYLE < music.conf
   echo "Composing $((TOTAL / 60)) minutes of music..."
-  python3 music-long.py "$TOTAL" music-long.wav "$SEED" "$TR" "$RMS" "$SLOW" ${BPM:-} >/dev/null
+  python3 music-long.py "$TOTAL" music-long.wav "$SEED" "$TR" "$RMS" "$SLOW" ${BPM:-0} ${STYLE:-ambient} >/dev/null
   MUSIC=music-long.wav
 fi
 { echo "file intro.mp4"; for _ in $(seq "$N"); do echo "file loop.mp4"; done; echo "file outro.mp4"; } > list.txt

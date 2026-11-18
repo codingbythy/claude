@@ -89,7 +89,6 @@ button { cursor: pointer; }
       <h1>Botanist's Glasshouse</h1>
       <div class="rows">
         <label for="volRain">Rain</label><input id="volRain" type="range" min="0" max="100" value="55">
-        <label for="volDrips">Drips</label><input id="volDrips" type="range" min="0" max="100" value="45">
         <label for="timer">Sleep timer</label>
         <select id="timer">
           <option value="0" selected>Off</option>
@@ -125,8 +124,8 @@ button { cursor: pointer; }
     get(k, d) { try { const v = localStorage.getItem('glasshouse.' + k); return v === null ? d : v; } catch (e) { return d; } },
     set(k, v) { try { localStorage.setItem('glasshouse.' + k, v); } catch (e) {} }
   };
-  const ui = { rain: $('volRain'), drips: $('volDrips'), timer: $('timer') };
-  ui.rain.value = store.get('rain', 55); ui.drips.value = store.get('drips', 45);
+  const ui = { rain: $('volRain'), timer: $('timer') };
+  ui.rain.value = store.get('rain', 55);
 
   const scene = $('scene');
   function fit() {
@@ -248,7 +247,7 @@ button { cursor: pointer; }
   }
   if (!R) requestAnimationFrame(frame);
 
-  /* ---------- sound: slow, soft rain and the occasional water drip ---------- */
+  /* ---------- sound: a faint, steady, muffled rain, nothing sudden to pull you off the page ---------- */
   let ac = null, A = null, running = false;
   const vol = el => Math.pow(el.value / 100, 1.6);
   const atime = () => R ? R.t : ac.currentTime;
@@ -270,7 +269,7 @@ button { cursor: pointer; }
     const master = gain(0), comp = ac.createDynamicsCompressor();
     comp.threshold.value = -18; comp.ratio.value = 2.5; comp.attack.value = 0.02; comp.release.value = 0.6;
     chain(master, comp, ac.destination);
-    const rainBus = gain(vol(ui.rain)), dripBus = gain(vol(ui.drips));
+    const rainBus = gain(vol(ui.rain)), dripBus = gain(0);
     [rainBus, dripBus].forEach(b => b.connect(master));
     /* a soft, dark wash of slow rain: no bright patter, nothing sharp */
     /* rain heard through the glass: a muffled, low wash with the hiss filtered away */
@@ -297,10 +296,6 @@ button { cursor: pointer; }
   function tick() {
     if (!running) return;
     const now = atime(), br = breeze(clock() + 0.6);
-    if (A.nextTap < now) A.nextTap = now + 0.02;
-    while (A.nextTap < now + 2.5) { tap(A.nextTap); A.nextTap += -Math.log(1 - Math.random()) * 0.6; }   /* slow, single drops */
-    if (A.nextDrip < now) A.nextDrip = now + 0.1;
-    while (A.nextDrip < now + 2.5) { drip(A.nextDrip); A.nextDrip += rand(6, 16); }   /* very sparse */
     sleepTick();
   }
   if (!R) setInterval(tick, 450);
@@ -348,7 +343,7 @@ button { cursor: pointer; }
     if (open) invite.classList.add('gone');
   });
   soundBtn.addEventListener('click', () => { invite.classList.add('gone'); setSound(!running); });
-  const bus = { rain: 'rainBus', drips: 'dripBus' };
+  const bus = { rain: 'rainBus' };
   Object.keys(bus).forEach(k => ui[k].addEventListener('input', () => { store.set(k, ui[k].value); if (A) A[bus[k]].gain.setTargetAtTime(vol(ui[k]), atime(), 0.05); }));
   ui.timer.addEventListener('change', () => { if (running) armSleep(); });
   $('fs').addEventListener('click', () => {
