@@ -68,9 +68,10 @@ button { cursor: pointer; }
 <body>
 <div id="stage">
   <div id="scene">
-    <img id="base" src="room.webp" alt="A pixel-art Victorian glasshouse on a rainy autumn evening: tall arched windows onto a garden of red and gold trees, a cream radiator, a brass reading lamp, a cup of tea on a small table and a red velvet armchair with a knitted throw.">
+    <img id="base" src="room.webp" alt="A pixel-art Victorian glasshouse on a rainy autumn evening: tall arched windows onto a garden of red and gold trees, a cream radiator, a brass reading lamp, a cup of tea on a small table and a fox asleep on a red velvet armchair with a knitted throw.">
     <canvas id="out" class="px" width="418" height="235"></canvas>
     <canvas id="glass" class="px" width="418" height="235"></canvas>
+    <img id="fox" src="fox.png" alt="" style="left:1196px;top:566px;width:276px;height:242px;image-rendering:pixelated;transform-origin:50% 100%">
     <div id="lampGlow"></div>
     <canvas id="room" class="px" width="418" height="235"></canvas>
   </div>
@@ -169,6 +170,7 @@ button { cursor: pointer; }
   const roomC = $('room'), rx = roomC.getContext('2d');
   const steam = [];
   const lampGlow = $('lampGlow');
+  const fox = $('fox');
 
   function strike() {}   /* no lightning in the glasshouse; kept for the shared renderer */
 
@@ -232,6 +234,7 @@ button { cursor: pointer; }
 
       /* room */
       lampGlow.style.opacity = (0.24 + 0.03 * Math.sin(t * 0.7)).toFixed(3);
+      fox.style.transform = `scaleY(${(1.006 - 0.006 * Math.cos(2 * Math.PI * t / 4.5)).toFixed(4)})`;   /* the fox breathes */
       rx.clearRect(0, 0, W, H);
       if (Math.random() < dt * 5) steam.push({ x: rand(267, 270), y: 133, life: rand(2, 3.2), age: 0, ph: rand(0, 6.28) });
       for (let i = steam.length - 1; i >= 0; i--) {
