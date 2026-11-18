@@ -273,16 +273,16 @@ button { cursor: pointer; }
     const rainBus = gain(vol(ui.rain)), dripBus = gain(vol(ui.drips));
     [rainBus, dripBus].forEach(b => b.connect(master));
     /* a soft, dark wash of slow rain: no bright patter, nothing sharp */
-    chain(loop(white), filt('highpass', 300), filt('lowpass', 2400), gain(0.022), rainBus);
-    const patterG = gain(0.004);
-    chain(loop(white, 0.85), filt('bandpass', 2600, 0.7), patterG, rainBus);
-    chain(loop(brown, 1.8), filt('bandpass', 650, 0.6), gain(0.05), rainBus);
+    /* rain heard through the glass: a muffled, low wash with the hiss filtered away */
+    chain(loop(white), filt('highpass', 180), filt('lowpass', 900), filt('lowpass', 900), gain(0.03), rainBus);
+    const patterG = gain(0);
+    chain(loop(brown, 1.8), filt('bandpass', 520, 0.5), gain(0.045), rainBus);
     A = { white, master, rainBus, dripBus, patterG, nextTap: atime() + 0.2, nextDrip: atime() + 3 };
   }
   function tap(at) {
     const src = ac.createBufferSource(); src.buffer = A.white;
-    const f = filt('bandpass', rand(3000, 7500), rand(3, 6)), g = gain(0);
-    const peak = Math.pow(Math.random(), 2.6) * 0.04 + 0.003, len = rand(0.004, 0.012);
+    const f = filt('bandpass', rand(1400, 3200), rand(4, 8)), g = gain(0);   /* soft, rounded drops on the glass, not clicks */
+    const peak = Math.pow(Math.random(), 2.6) * 0.022 + 0.002, len = rand(0.008, 0.02);
     g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(peak, at + 0.001); g.gain.exponentialRampToValueAtTime(0.0004, at + len);
     chain(src, f, g, A.rainBus); src.start(at, Math.random() * 2.5, len + 0.02);
   }
@@ -297,9 +297,8 @@ button { cursor: pointer; }
   function tick() {
     if (!running) return;
     const now = atime(), br = breeze(clock() + 0.6);
-    A.patterG.gain.setTargetAtTime(0.003 + 0.003 * br, now, 0.8);
     if (A.nextTap < now) A.nextTap = now + 0.02;
-    while (A.nextTap < now + 2.5) { tap(A.nextTap); A.nextTap += -Math.log(1 - Math.random()) * 0.4; }   /* slow, single drops */
+    while (A.nextTap < now + 2.5) { tap(A.nextTap); A.nextTap += -Math.log(1 - Math.random()) * 0.6; }   /* slow, single drops */
     if (A.nextDrip < now) A.nextDrip = now + 0.1;
     while (A.nextDrip < now + 2.5) { drip(A.nextDrip); A.nextDrip += rand(6, 16); }   /* very sparse */
     sleepTick();
