@@ -220,7 +220,7 @@ class Kit:
         def make():
             f = 440 * 2 ** ((midi - 69) / 12); n = int(4.5 * SR)
             e, t = _env(n, 0.006, 1.9 * (220 / f) ** 0.3)
-            tine = 0.9 * np.exp(-t / 0.18)                                   # the bell-like strike, fading fast
+            tine = 0.55 * np.exp(-t / 0.15)                                  # a softened bell-like strike, fading fast
             s = np.sin(2 * np.pi * f * t + tine * np.sin(2 * np.pi * f * 7 * t))
             s += 0.22 * np.sin(2 * np.pi * 2 * f * t) * np.exp(-t / 0.6)
             return s * e
@@ -238,6 +238,21 @@ class Kit:
             a = int(0.012 * SR); s[:a] *= np.linspace(0, 1, a)
             return s
         return self._get(('pn', midi), make)
+
+    def lead(self, midi):
+        """A smooth, rounded melody voice: swells in instead of being struck, mostly fundamental,
+        two slightly detuned voices for warmth, and a slow vibrato that eases in."""
+        def make():
+            f = 440 * 2 ** ((midi - 69) / 12); n = int(5 * SR); t = np.arange(n) / SR
+            vib = 1 + 0.0018 * np.sin(2 * np.pi * 4.6 * t) * np.clip((t - 0.35) / 0.6, 0, 1)
+            out = np.zeros(n)
+            for det, amp in ((1.0, 1.0), (1.0035, 0.55), (0.9968, 0.4)):
+                ph = 2 * np.pi * np.cumsum(f * det * vib) / SR
+                out += amp * (np.sin(ph) + 0.18 * np.sin(2 * ph) * np.exp(-t / 1.2) + 0.04 * np.sin(3 * ph))
+            a = int(0.085 * SR); env = np.exp(-t / 2.6) * 0.8 + 0.2 * np.exp(-t / 0.5)
+            env[:a] *= (0.5 - 0.5 * np.cos(np.pi * np.arange(a) / a))
+            return out * env / 1.95
+        return self._get(('ld', midi), make)
 
     def bass(self, midi):
         def make():
@@ -291,7 +306,7 @@ def lofi_piece(k, bars, seed, tr, bpm, first):
         if s0 >= n or s0 < 0: return
         if dur is not None:
             m = min(len(sig), int((dur + 0.25) * SR)); sig = sig[:m].copy()
-            fr = min(int(0.25 * SR), m); sig[m - fr:] *= np.linspace(1, 0, fr)
+            fr = min(int(0.25 * SR), m); sig[m - fr:] *= np.linspace(1, 0, fr) ** 1.5
         sig = sig[:n - s0] * vel
         L[s0:s0 + len(sig)] += sig * math.cos(pan * math.pi / 2)
         R[s0:s0 + len(sig)] += sig * math.sin(pan * math.pi / 2)
@@ -363,9 +378,9 @@ def lofi_piece(k, bars, seed, tr, bpm, first):
                 contour = [int(x) for x in rng.choice([-2, -1, 1, 2], size=6)]
                 motif = (rhythm, contour)
             root_deg, q = prog[pb % 4]
-            pool = sorted({tonic + 12 + d + o for d in MAJOR for o in (0, 12) if 67 <= tonic + 12 + d + o <= 86})
+            pool = sorted({tonic + d + o for d in MAJOR for o in (0, 12, 24) if 62 <= tonic + d + o <= 79})   # a lower, warmer register
             chord_pcs = {(tonic + root_deg + x) % 12 for x in TONES[q]}
-            idx = min(range(len(pool)), key=lambda i: abs(pool[i] - (last_mel or 76)))
+            idx = min(range(len(pool)), key=lambda i: abs(pool[i] - (last_mel or 70)))
             for j, rb in enumerate(rhythm):
                 if j:
                     idx = int(np.clip(idx + contour[(j - 1) % len(contour)], 0, len(pool) - 1))
@@ -378,7 +393,7 @@ def lofi_piece(k, bars, seed, tr, bpm, first):
                 if pool[idx] == last_mel:
                     idx = idx + 1 if idx < len(pool) - 1 else idx - 1
                 nxt = rhythm[j + 1] if j + 1 < len(rhythm) else 8
-                add(kit.piano(pool[idx]), t0 + sw(rb), rng.uniform(0.26, 0.34), 0.45, (nxt - rb) * beat + 0.3)
+                add(kit.lead(pool[idx]), t0 + sw(rb), rng.uniform(0.2, 0.25), 0.45, (nxt - rb) * beat + 0.45)
                 last_mel = pool[idx]
     L = _reverb_warm(L, 1); R = _reverb_warm(R, 2)
     return np.stack([L, R], 1), key
