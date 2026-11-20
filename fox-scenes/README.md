@@ -33,7 +33,8 @@ cd fox-scenes && python3 -m http.server 8791 --bind 127.0.0.1
 python3 fox-scenes/tools/preview.py toymaker 60
 ```
 
-This renders 60 seconds of picture and sound into `fox-scenes/work/toymaker/` and prints a sound report. Each scene is held to
+This renders 60 seconds of picture and sound into `fox-scenes/work/toymaker/` and prints a sound report. Preview clips are
+not kept in the repository; the same command always rebuilds the same clip. Each scene is held to
 three rules, and the report says pass or fail for each:
 
 1. Full level from the first second: no fade-in, no silence, no title card.
