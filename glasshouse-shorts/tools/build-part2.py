@@ -3,8 +3,8 @@ from PIL import Image
 from scipy.signal import butter, sosfilt
 W, H, SR, LEAD = 1080, 1920, 48000, 0.25
 KIT = "src/glasshouse/video-kit"
-SCRIPT = ("To answer that, | you have to go back to the day the will was read. | Your cousins got the savings. | The jewellery. | The car. | "
- "You got the cottage. | They laughed. | “That tattered little shack? | Good luck selling it.” | You didn’t sell it. | "
+SCRIPT = ("Your cousins laughed when the will was read. | They got the savings. | The jewellery. | The car. | "
+ "You got the cottage. | And, though nobody knew it yet, | a fox. | “That tattered little shack? | Good luck selling it.” | You didn’t sell it. | "
  "That spring, your rent went up again, | and your job went remote for good. | So you packed your shoebox apartment | into eleven boxes, | and took the key. | "
  "It was never little. | And it was never a shack. | Just a Victorian cottage | no one had been kind to in years. | "
  "You couldn’t afford builders. | So you learned. | One room at a time. | One paycheck at a time. | Paint in your hair. | "
@@ -16,7 +16,7 @@ assert sum(len(p) for p in phr) == len(words), (sum(len(p) for p in phr), len(wo
 def wt(name, nth=0):
     hits = [w for w in words if w[0].lower().strip(".,?") == name]; return hits[nth][1] + LEAD
 VO_END = words[-1][2] + LEAD
-T_DOOR = VO_END + 0.45; T_OUT = T_DOOR + 2.1; D = T_OUT + 2.6
+T_DOOR = VO_END + 0.45; T_OUT = T_DOOR + 2.1; D = T_OUT + 2.2
 T_WORK, T_WARM, T_ONE = wt("couldn't"), wt("warm"), wt("every", 1)
 def ts(t): return f"{int(t//3600)}:{int(t%3600//60):02d}:{t%60:05.2f}"
 def split_lines(ws, maxc=21):
@@ -32,12 +32,12 @@ def split_lines(ws, maxc=21):
 cues, i = [], 0
 for p in phr:
     seg = words[i:i + len(p)]; i += len(p); h = len(p) // 2 + 1
-    groups = [(p, seg)] if len(" ".join(p)) <= 40 else [(p[:h], seg[:h]), (p[h:], seg[h:])]
+    groups = [(p, seg)] if len(" ".join(p)) <= 40 or not cues else [(p[:h], seg[:h]), (p[h:], seg[h:])]
     for g, s in groups: cues.append([g, s[0][1] + LEAD, s[-1][2] + LEAD])
 ev = []
 for n, (g, a, b) in enumerate(cues):
     last = n == len(cues) - 1
-    end = min(b + 0.45, cues[n + 1][1] - 0.02) if not last else T_DOOR + 1.6
+    end = min(b + 0.45, cues[n + 1][1] - 0.09) if not last else T_DOOR + 1.6
     tag = "{\\fad(200,300)\\fs96\\c&H7FD0FF&}" if last else "{\\fad(110,90)}"
     ev.append(f"Dialogue: 0,{ts(max(a - 0.05, 0))},{ts(end)},Cap,,0,0,0,,{tag}" + "\\N".join(split_lines(g, 19 if last else 21)))
 ev.append(f"Dialogue: 0,{ts(T_OUT + 0.5)},{ts(D - 0.15)},Cap,,0,0,0,,{{\\fad(300,300)\\fs52\\c&H9CCBF2&}}to be continued…")
@@ -80,8 +80,8 @@ def fx(name, t, gain):
     x = clip(name)
     if x is not None: put(x, t, gain); used.append(name)
     return x is not None
-if not fx("paper", wt("will") - 0.9, 0.10):
-    for k, d in enumerate((0.5, 0.35)): put(swipe(d, 2200, 8000), wt("will") - 0.9 + 0.6 * k, 0.05)                                        # the will
+if not fx("paper", max(0.1, wt("will") - 0.9), 0.10):
+    for k, d in enumerate((0.5, 0.35)): put(swipe(d, 2200, 8000), max(0.1, wt("will") - 0.9) + 0.6 * k, 0.05)                                        # the will
 put(knock(95, 240, 0.25), wt("boxes") + 0.15, 0.16); put(swipe(0.3, 500, 2500), wt("boxes") + 0.05, 0.05)   # a box set down
 fx("key", wt("key") + 0.1, 0.14)                                           # the key
 tp = wt("paint")
