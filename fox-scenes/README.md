@@ -10,6 +10,12 @@ live videos or their folders.
 | `shepherd/` | Winter Wind at the Shepherd's Hut | ambient: moor wind and a wood stove. No music |
 | `observatory/` | Starry Night at the Stargazer's Observatory | settings only, not yet previewed (the style-reference painting) |
 
+## Where the paintings come from
+
+Paintings are made outside this repository, in ChatGPT (Sora) or with Google's tools (Veo), with
+`channel/style-reference/two-foxes-observatory.webp` attached so the foxes and the style stay the same. Each scene keeps the
+prompt that made its painting in `painting-prompt.txt`. Do not use ElevenLabs for image generation.
+
 ## How a scene is put together
 
 Every scene uses the same page, `scene.html?s=<folder>`. Everything specific to a scene is in its `scene.json`:

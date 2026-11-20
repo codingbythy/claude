@@ -1,0 +1,13 @@
+Use the attached reference image as the guide for rendering style and for the two characters. Match its detailed pixel-art illustration style exactly: crisp visible pixels, dithered shading, soft outlines, the same level of detail, rich warm lamplight set against a deep blue night. Keep the same two foxes: the larger deep russet-red fox with a white-tipped tail and dark chocolate paws, and the smaller golden-tan fox with a cream-tipped tail. They are curled up asleep, nose to nose, in the same pose and at the same size in the frame as in the reference, placed right of centre.
+
+Create a new 16:9 wide interior scene: the small waiting room of a remote mountain railway halt at night, in a blizzard.
+
+Layout, kept like the reference: the left half of the picture is a large multi-pane wooden window looking outside, with calm, dark, uncluttered stormy sky in the top-left corner. The foxes sleep right of centre on a long padded wooden waiting-room bench that runs across the lower middle, draped with a green tartan wool blanket. A warm oil lantern glows in the top-right corner. A small round wooden table sits in the bottom-left corner holding two steaming enamel mugs and a folded woollen scarf.
+
+Through the window: a snow-buried station platform with a single iron platform lamp glowing amber, deep drifts against a wooden fence, a railway signal post with a small red lamp, the rails disappearing under snow, and dark pine forest and mountain shapes beyond under a heavy blue-grey sky. The far distance is soft and hazy. Snow is heaped high on the outside sill and frost covers the lower corners of the panes.
+
+Inside, behind the foxes on the right: a black cast-iron pot-bellied stove glowing orange through its grate, with an enamel kettle on top and a stovepipe rising up the wall; a small arched ticket window with a brass grille; a pendulum wall clock whose face has plain tick marks instead of numerals; a stationmaster's cap and a brass signal lantern hanging on pegs; a leather suitcase and a travelling trunk. Worn wooden floorboards and panelled walls.
+
+Important, because the weather will be animated separately: do not draw any snowflakes, falling snow or streaks in the air outside, and no steam or smoke. Show the snow only where it has settled. Do draw the stove glow and the lamp glow.
+
+No people. No text, letters, numbers or signs anywhere. No border, no watermark.
