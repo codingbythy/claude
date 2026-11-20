@@ -1,0 +1,21 @@
+{
+ "title": "Blizzard at the Stationmaster's Waiting Room",
+ "file_name": "blizzard-at-the-stationmasters-waiting-room-2h",
+ "hours": 2,
+ "loop_seconds": 180,
+ "open_seconds": 6,
+ "outro_seconds": 20,
+ "ambience_lufs": -20,
+ "mix": {
+  "mode": "ambient",
+  "target_lufs": -16
+ },
+ "files": [
+  "open.mp4",
+  "loop-a.mp4",
+  "loop-b.mp4",
+  "outro.mp4",
+  "ambience.flac",
+  "build.py"
+ ]
+}

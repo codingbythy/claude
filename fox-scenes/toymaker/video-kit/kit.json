@@ -1,0 +1,30 @@
+{
+ "title": "Christmas Snowfall at the Toymaker's Workshop",
+ "file_name": "christmas-snowfall-at-the-toymakers-workshop-2h",
+ "hours": 2,
+ "loop_seconds": 180,
+ "open_seconds": 6,
+ "outro_seconds": 20,
+ "ambience_lufs": -20,
+ "mix": {
+  "mode": "lofi",
+  "music": {
+   "seed": 31,
+   "transpose": -2,
+   "bpm": 72,
+   "style": "lofi"
+  },
+  "ambience_vs_music_db": -7,
+  "target_lufs": -16,
+  "music_eq": "bass=g=-6:f=200:w=0.7,treble=g=9:f=1100:w=0.6"
+ },
+ "files": [
+  "open.mp4",
+  "loop-a.mp4",
+  "loop-b.mp4",
+  "outro.mp4",
+  "ambience.flac",
+  "build.py",
+  "music-long.py"
+ ]
+}

@@ -20,14 +20,28 @@ prompt that made its painting in `painting-prompt.txt`. Do not use ElevenLabs fo
 
 Every scene uses the same page, `scene.html?s=<folder>`. Everything specific to a scene is in its `scene.json`:
 
-- `image`: the painting (`room.webp`, 1920×1080). `painting-1280.png` is the generated original.
+- `image`: the picture the scene page shows (`room.webp`). It is made from `painting-1280.png`, the painting as it arrived, by
+  `tools/grade.py <folder>` using the `grade` settings (colour grade; for the toymaker also a true pixel grid and a limited palette).
 - `glass` and `mask`: where the window glass is, so weather is only drawn there (`tools/make-mask.py <folder>` rebuilds the mask).
 - `weather`, `stars`, `twinkles`, `glows`, `flames`, `sparks`, `steam`: what moves.
 - `breathe`: where each fox is, so it rises and falls as it sleeps.
+- `cuddle`: the opening. For the first second or so the foxes start slightly apart and nestle into each other.
 - `sound`: the wind, fire, clock and other sounds, all generated (nothing recorded or licensed).
 - `mix`: `ambient` (weather only) or `lofi` (music on top, weather a set distance underneath), and the loudness target.
-- `hours`: the video length. The thumbnail badge is made from this number, so the two cannot disagree.
+- `hours`: the video length. The thumbnail badge, the title and the build all read this number, so they cannot disagree.
 - `thumbnail`: the two lines of the scene name and the accent colour.
+
+### Picture and sound move together
+
+Two curves in `scene.html` run everything that changes over the three-minute loop:
+
+- `storm`: how hard it is snowing and blowing. It opens strong, peaks about 20 seconds in, falls to a calm stretch in the
+  middle and surges again. The number of flakes in the air, their speed and slant, and the haze all follow it, and so do the
+  wind's loudness and pitch and the snow ticking on the glass.
+- `fireLife`: how lively the fire is. Crackle rate and loudness, the glow, the flames and the sparks all follow it, and each big
+  pop in the sound throws a burst of sparks and a flash of firelight in the picture.
+
+Both curves repeat exactly every 180 seconds, so the loop comes round without a jump.
 
 ## Making a preview
 
@@ -50,8 +64,27 @@ three rules, and the report says pass or fail for each:
 Thumbnails: `node tools/still.js "http://127.0.0.1:8791/scene.html?s=toymaker" frame.jpg 12`, then
 `node tools/thumb.js toymaker frame.jpg <out-dir>` writes the 1280×720 thumbnail and a 320×180 copy for judging it at feed size.
 
-## Not built yet
+## Making the loop and the two-hour video
 
-The two-hour build (seamless 3-minute picture loop, a longer weather cycle, the Colab notebook) comes after the prototypes are
-approved. The older scenes' loop and kit scripts in `/tools` expect mono sound; these scenes are stereo, so that step needs a small
-update rather than a new pipeline.
+```bash
+node fox-scenes/tools/render.js "http://127.0.0.1:8791/scene.html?s=toymaker" fox-scenes/work/toymaker/loop 184
+```
+
+```bash
+node fox-scenes/tools/render.js "http://127.0.0.1:8791/scene.html?s=toymaker&open=14" fox-scenes/work/toymaker/open 10
+```
+
+```bash
+python3 fox-scenes/tools/make-loop.py fox-scenes/work/toymaker/loop
+```
+
+```bash
+python3 fox-scenes/tools/make-kit.py toymaker
+```
+
+The first command renders the loop (about 25 minutes), the second the opening seconds with the foxes nestling in, the third
+blends the loop's end into its start, and the fourth writes `toymaker/video-kit/`. The kit's `build.py` assembles the long
+video: the opening, then the loop for as many hours as `hours` says, then a 20-second fade. `make-video.ipynb` does the same in
+Google Colab and saves the result to Google Drive; it downloads the kit from this branch, so the branch name is written in it.
+
+Kits exist for `toymaker` and `stationmaster`. `shepherd` and `observatory` have scene settings only.

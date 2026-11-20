@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Works out where the window glass is in a scene's painting, so weather is only drawn on the glass.
 
-Reads <scene>/scene.json -> "glass": {"rects": [...], "exclude": [...], "fur": [...], "warm": 26, "dark": 120, "green": 10}
+Reads <scene>/scene.json -> "glass": {"rects": [...], "exclude": [...], "exclude_polys": [...], "fur": [...], "warm": 26, "dark": 120, "green": 10}
 (rects are [x0,y0,x1,y1] in the scene's layout coordinates). A pixel inside a rect counts as glass unless it is inside an exclude
 rect, looks like the window frame (brown and dark), or lies in a "fur" rect and is any warm colour (a fox in front of the window). Writes <scene>/glass-mask.png on the half-size effects grid, and with
 --debug <file> a picture of the painting with the mask tinted so it can be checked by eye.
@@ -10,12 +10,13 @@ Usage: make-mask.py <scene-dir> [--debug out.jpg]
 """
 import json, sys, os
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 
 d = sys.argv[1]
 C = json.load(open(os.path.join(d, 'scene.json')))
 SW, SH = C['size']; G = C['glass']
-im = Image.open(os.path.join(d, C['image'])).convert('RGB').resize((SW, SH), Image.LANCZOS)
+src = os.path.join(d, 'painting-1280.png')          # judge colours on the painting as made, not on the graded copy
+im = Image.open(src if os.path.exists(src) else os.path.join(d, C['image'])).convert('RGB').resize((SW, SH), Image.LANCZOS)
 a = np.asarray(im).astype(np.int32); r, g, b = a[..., 0], a[..., 1], a[..., 2]
 lum = (299 * r + 587 * g + 114 * b) // 1000
 inside = np.zeros((SH, SW), bool)
@@ -23,6 +24,11 @@ for x0, y0, x1, y1 in G['rects']:
     inside[y0:y1, x0:x1] = True
 for x0, y0, x1, y1 in G.get('exclude', []):
     inside[y0:y1, x0:x1] = False
+if G.get('exclude_polys'):                                               # window bars the colour test cannot tell from the night outside
+    pm = Image.new('L', (SW, SH), 0); dr = ImageDraw.Draw(pm)
+    for poly in G['exclude_polys']:
+        dr.polygon([tuple(pt) for pt in poly], fill=255)
+    inside &= np.asarray(pm) == 0
 frame = (r - b > G.get('warm', 26)) & (lum < G.get('dark', 120))        # dark brown wood
 for x0, y0, x1, y1 in G.get('fur', []):                                 # a fox lying in front of the window
     frame[y0:y1, x0:x1] |= (r - b > 30)[y0:y1, x0:x1]
