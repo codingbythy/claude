@@ -39,13 +39,13 @@ STARTS = [4, 62, 118]
 for pi, (label, title, lines) in enumerate(PARTS, 1):
     if len(sys.argv) > 1 and str(pi) not in sys.argv[1:]: continue
     meta = json.load(open(f"cues{pi}.json")); D = meta["dur"]
-    ev = [f"Dialogue: 0,{ts_fmt(0.15)},{ts_fmt(1.5)},Title,,0,0,0,,{{\\fad(250,250)}}{{\\fs44\\c&H9CCBF2&}}{label.upper()}\\N{{\\fs92\\c&HFFFFFF&}}{title}"]
+    ev = []
     for c in meta["cues"]:
         ch = chunks(c["text"]); tot = sum(len(k) for k in ch); t = c["start"]
         for k in ch:
             d = (c["end"] - c["start"]) * len(k) / tot
             ev.append(f"Dialogue: 0,{ts_fmt(t)},{ts_fmt(t + d + 0.12)},Cap,,0,0,0,,{{\\fad(120,100)}}{wrap(k)}"); t += d
-    tail = "to be continued…" if pi < 3 else "the end"
+    tail = "to be continued…"
     ev.append(f"Dialogue: 0,{ts_fmt(D - 2.2)},{ts_fmt(D - 0.2)},Title,,0,0,0,,{{\\fad(300,300)}}{{\\fs56\\c&H9CCBF2&}}{tail}")
     open(f"p{pi}.ass", "w").write(f"""[Script Info]
 ScriptType: v4.00+
@@ -68,10 +68,10 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
           f"crop=1080:1920:x='{pan}':y=0,format=gbrp,split=3[s][b0][g0];"
           f"[b0]gblur=sigma=7[bl];[1:v]format=gray,scale=1080:1920[m];[s][bl][m]maskedmerge[tsd];"
           f"[g0]curves=all='0/0 0.55/0 1/1',gblur=sigma=22[glow];[tsd][glow]blend=all_mode=screen:all_opacity=0.5[lit];"
-          f"[lit][2:v]overlay=format=auto,format=yuv420p,ass=p{pi}.ass:fontsdir=fonts,fade=in:st=0:d=0.6,fade=out:st={D-0.7:.2f}:d=0.7[v];"
+          f"[lit][2:v]overlay=format=auto,format=yuv420p,ass=p{pi}.ass:fontsdir=fonts,fade=in:st=0:d=0.25,fade=out:st={D-0.7:.2f}:d=0.7[v];"
           f"[3:a]aresample=48000,pan=stereo|c0=c0|c1=c0,volume=1.6[amb];[4:a]aresample=48000,volume=0.8[mu];"
           f"[5:a]aresample=48000,highpass=f=70,acompressor=threshold=-22dB:ratio=2.5:attack=8:release=160,volume=2.4,pan=stereo|c0=c0|c1=c0[vo];"
-          f"[amb][mu][vo]amix=inputs=3:normalize=0,alimiter=limit=0.89:level=disabled,afade=in:st=0:d=0.8,afade=out:st={D-1.6:.2f}:d=1.6[a]")
+          f"[amb][mu][vo]amix=inputs=3:normalize=0,alimiter=limit=0.89:level=disabled,afade=in:st=0:d=0.3,afade=out:st={D-1.6:.2f}:d=1.6[a]")
     cmd = ["ffmpeg", "-y", "-loglevel", "error", "-ss", str(ss), "-i", f"{KIT}/loop.mp4", "-loop", "1", "-i", "ts.png", "-loop", "1", "-i", "ov.png",
            "-ss", str(ss), "-i", f"{KIT}/ambience.flac", "-ss", str(8 + 0 * pi), "-i", f"{KIT}/music.flac", "-i", f"vo{pi}.wav",
            "-filter_complex", fc, "-map", "[v]", "-map", "[a]", "-t", f"{D:.2f}", "-r", "30",

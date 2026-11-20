@@ -8,7 +8,7 @@ def trim(x, th=0.004):
     return x[max(0, idx[0]-600): idx[-1]+2400] if len(idx) else x
 for pi, (_, _, lines) in enumerate(PARTS, 1):
     # group lines into sentences so prosody is natural, keep line boundaries for captions
-    out, cues, t = [np.zeros(int(SR*1.6), np.float32)], [], 1.6
+    out, cues, t = [np.zeros(int(SR*0.25), np.float32)], [], 0.25
     group = []
     for li, line in enumerate(lines):
         group.append(line)
