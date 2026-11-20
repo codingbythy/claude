@@ -7,8 +7,9 @@ Vertical 1080x1920 shorts cut from the `glasshouse/` scene on branch `claude/foc
 
 ## Part 1 – Mr. Fox
 
-Someone is already sitting in your armchair. You know it before the lights even come on. You set your umbrella on the counter, and let out the sigh you’ve been holding all day. An autumn leaf still clings to your coat. You brush it away. The lamp flickers on. And there he is. Mr. Fox. Curled up in your spot. As usual. You chuckle, and put the kettle on. Hot tea. A warm armchair. The chapter you left off yesterday. But this house was never meant to be yours. And the fox? He was never invited.
+Someone is already sitting in your armchair. You know it before the lights even come on. You set your umbrella on the counter, and let out the sigh you’ve been holding all day. An autumn leaf still clings to your coat. You brush it away. The lamp flickers on. And there he is. Mr. Fox. Curled up in your spot. As usual. You chuckle, and put the kettle on. But here is the thing about Mr. Fox. You never brought him home. You never even went looking. A year ago, this house stood empty, and you had never seen him before in your life. Now, he waits for you every single night. So… where did he come from?
 
+Part 1 is built by `tools/build-part1.py`: ElevenLabs v4 narration (voice "Jen"), word-timed captions kept inside the YouTube Shorts safe area, a lamp that starts off, flickers on with the line and dies at the end, and sound effects.
 
 ## Part 2 – The Cottage
 
