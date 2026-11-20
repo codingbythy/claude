@@ -1,0 +1,17 @@
+{
+  "title": "Starry Night at the Stargazer's Observatory",
+  "thumbnail": {"lines": ["STARRY NIGHT", "OBSERVATORY"], "accent": "#ffcf70"},
+  "hours": 2,
+  "size": [1672, 941],
+  "image": "room.webp",
+  "mask": "glass-mask.png",
+  "glass": {"rects": [[70, 0, 1105, 395]], "warm": 26, "dark": 120},
+  "weather": {"type": "clear", "box": [70, 0, 1105, 395]},
+  "stars": {"rect": [80, 5, 1100, 235], "count": 80},
+  "twinkles": [[372, 363, 7], [313, 328, 7], [514, 352, 7], [496, 350, 7], [537, 349, 7], [329, 327, 7], [602, 366, 7], [570, 393, 7], [584, 391, 7], [613, 368, 7], [614, 350, 7], [292, 329, 7], [476, 339, 7], [348, 325, 7], [637, 331, 7], [598, 350, 7], [636, 362, 7], [574, 371, 7], [480, 374, 7], [587, 358, 7], [552, 388, 7]],
+  "glows": [{"x": 1565, "y": 120, "r": 230, "c": "255,196,120", "base": 0.08, "amp": 0.06, "kind": "lamp"}],
+  "steam": [{"x": 130, "y": 765}, {"x": 245, "y": 772}],
+  "breathe": [{"cx": 810, "cy": 470, "rx": 300, "ry": 160, "amt": 0.012, "period": 4.5}, {"cx": 1330, "cy": 500, "rx": 250, "ry": 150, "amt": 0.012, "period": 5, "phase": 1.9}],
+  "sound": {"wind": {"level": 0.3, "bed": 0.18, "bedF": 300, "body": 0.9, "bodyF": 420, "howl": 0.3, "howlF": [350, 560], "q": 1.5, "air": 0.01}},
+  "mix": {"mode": "lofi", "music": {"seed": 44, "transpose": 0, "bpm": 70, "style": "lofi"}, "ambience_vs_music_db": -9, "target_lufs": -16, "music_eq": "bass=g=-6:f=200:w=0.7,treble=g=9:f=1100:w=0.6"}
+}

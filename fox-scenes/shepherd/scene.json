@@ -1,0 +1,19 @@
+{
+  "title": "Winter Wind at the Shepherd's Hut",
+  "thumbnail": {"lines": ["WINTER WIND", "SHEPHERD'S HUT"], "accent": "#ffc878"},
+  "hours": 2,
+  "youtube": {"hook": "Wind & Crackling Fire Sounds for Sleep & Relaxation", "story": ["High on the moor the wind has not dropped all night. The shepherd is out at the fold, the stove is lit, and two foxes are asleep on the sheepskin.", "Let it blow. The hut has stood through worse."], "sounds": ["Steady moor wind with long gusts", "A crackling wood stove", "No music"], "good_for": "Good for sleep, reading, studying, or settling after a long day.", "hashtags": ["#windsounds", "#sleepsounds", "#cozyambience"]},
+  "size": [1280, 720],
+  "image": "room.webp",
+  "mask": "glass-mask.png",
+  "glass": {"rects": [[58, 6, 608, 382]], "warm": 26, "dark": 120, "fur": [[390, 240, 608, 382]]},
+  "weather": {"type": "wind", "box": [58, 6, 608, 382], "clouds": {"rect": [58, 8, 608, 190], "speed": 26, "alpha": 0.7}, "grass": {"rect": [58, 205, 608, 380], "speed": 55, "alpha": 0.1}, "dust": 55},
+  "stars": {"rect": [58, 8, 608, 110], "count": 30},
+  "glows": [{"x": 1232, "y": 340, "r": 300, "c": "255,150,60", "base": 0.1, "amp": 0.16, "kind": "fire"}, {"x": 1185, "y": 105, "r": 160, "c": "255,196,120", "base": 0.08, "amp": 0.05, "kind": "lamp"}, {"x": 157, "y": 67, "r": 60, "c": "210,225,255", "base": 0.1, "amp": 0.06, "kind": "lamp"}, {"x": 427, "y": 243, "r": 18, "c": "255,190,110", "base": 0.2, "amp": 0.3, "kind": "fire"}],
+  "flames": [{"x": 1200, "y": 288, "w": 62, "h": 92}],
+  "sparks": [{"x": 1205, "y": 300, "w": 50, "rate": 1.0}],
+  "steam": [{"x": 125, "y": 525}, {"x": 225, "y": 532}],
+  "breathe": [{"cx": 600, "cy": 365, "rx": 195, "ry": 120, "amt": 0.012, "period": 4.5}, {"cx": 1010, "cy": 385, "rx": 185, "ry": 110, "amt": 0.012, "period": 5, "phase": 1.9}],
+  "sound": {"wind": {"level": 0.9, "bed": 0.2, "bedF": 360, "body": 1.6, "bodyF": 430, "howl": 1.2, "howlF": [330, 760], "q": 2.2, "air": 0.015}, "fire": {"kind": "hearth", "pan": 0.6, "roar": 0.45, "crackle": 4.5, "gap": 0.3}},
+  "mix": {"mode": "ambient", "target_lufs": -16}
+}

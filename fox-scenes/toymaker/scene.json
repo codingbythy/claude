@@ -1,0 +1,20 @@
+{
+  "title": "Christmas Snowfall at the Toymaker's Workshop",
+  "thumbnail": {"lines": ["CHRISTMAS", "TOY WORKSHOP"], "accent": "#ffcf70"},
+  "hours": 2,
+  "youtube": {"hook": "Cosy Lo-Fi & Fireplace to Relax & Study", "story": ["It's Christmas Eve and the toymaker has gone up to bed. The last train is painted, the fire is burning low, and two foxes have taken the bench by the window.", "Snow is coming down over the village. Stay as long as you like."], "sounds": ["Mellow lo-fi at an easy 72 BPM that keeps changing, with no loop", "A crackling hearth fire", "Soft wind and snow against the window"], "good_for": "Made for wrapping presents, reading, studying, or doing nothing at all with a hot chocolate.", "hashtags": ["#christmasambience", "#cozylofi", "#fireplace"]},
+  "size": [1280, 720],
+  "image": "room.webp",
+  "mask": "glass-mask.png",
+  "glass": {"rects": [[48, 22, 672, 292]], "exclude": [[20, 232, 104, 292], [408, 246, 460, 292], [343, 266, 410, 292]], "warm": 26, "dark": 120, "green": 10, "fur": [[430, 240, 672, 292]]},
+  "weather": {"type": "snow", "box": [48, 22, 672, 292], "count": 300, "fall": [9, 26], "wind": -3, "gusty": 0.3, "sway": 3, "alpha": 0.95, "streak": 0, "haze": 0},
+  "stars": {"rect": [50, 25, 670, 120], "count": 22},
+  "twinkles": [[236, 35, 9], [35, 12, 9], [95, 3, 9], [448, 46, 9], [140, 23, 9], [412, 26, 9], [358, 36, 9], [491, 49, 9], [588, 42, 9], [200, 24, 9], [278, 32, 9], [167, 12, 9], [325, 19, 9], [10, 40, 9], [526, 28, 9], [654, 42, 9], [693, 14, 9], [35, 37, 9], [609, 12, 9], [115, 25, 9], [826, 186, 9], [704, 238, 9], [810, 123, 9], [654, 42, 9], [732, 259, 9], [827, 219, 9], [880, 294, 9], [770, 120, 9], [764, 216, 9], [756, 67, 9], [764, 185, 9], [717, 143, 9], [852, 238, 9], [865, 215, 9], [736, 164, 9], [739, 216, 9], [792, 151, 9], [808, 238, 9], [783, 84, 9], [716, 193, 9], [704, 208, 9], [848, 214, 9], [692, 223, 9], [675, 277, 9], [831, 252, 9], [747, 113, 9], [859, 277, 9], [772, 162, 9], [703, 271, 9], [762, 137, 9], [863, 146, 9], [746, 92, 9], [754, 238, 9], [779, 232, 9], [771, 291, 9], [805, 90, 9], [769, 276, 9], [742, 282, 9], [742, 297, 9]],
+  "glows": [{"x": 1255, "y": 385, "r": 300, "c": "255,150,60", "base": 0.1, "amp": 0.16, "kind": "fire"}, {"x": 1195, "y": 95, "r": 150, "c": "255,196,120", "base": 0.08, "amp": 0.05, "kind": "lamp"}, {"x": 125, "y": 180, "r": 70, "c": "255,200,120", "base": 0.1, "amp": 0.08, "kind": "lamp"}],
+  "flames": [{"x": 1225, "y": 335, "w": 55, "h": 70}],
+  "sparks": [{"x": 1230, "y": 345, "w": 45, "rate": 1.4}],
+  "steam": [{"x": 85, "y": 532}, {"x": 200, "y": 543}],
+  "breathe": [{"cx": 650, "cy": 385, "rx": 215, "ry": 125, "amt": 0.012, "period": 4.5}, {"cx": 1040, "cy": 420, "rx": 185, "ry": 110, "amt": 0.012, "period": 5, "phase": 1.9}],
+  "sound": {"wind": {"level": 0.35, "bed": 0.18, "bedF": 300, "body": 0.9, "bodyF": 420, "howl": 0.4, "howlF": [380, 620], "q": 1.6, "air": 0.014}, "fire": {"kind": "hearth", "pan": 0.55, "roar": 0.5, "crackle": 1.0, "gap": 0.26}, "taps": {"level": 0.035, "rate": 2.5}},
+  "mix": {"mode": "lofi", "music": {"seed": 31, "transpose": -2, "bpm": 72, "style": "lofi"}, "ambience_vs_music_db": -7, "target_lufs": -16, "music_eq": "bass=g=-6:f=200:w=0.7,treble=g=9:f=1100:w=0.6"}
+}

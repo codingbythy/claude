@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Somewhere Sheltered</title>
+<style>
+html, body { margin: 0; height: 100%; background: #07090d; overflow: hidden; }
+#scene { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+#scene > * { position: absolute; left: 0; top: 0; display: block; pointer-events: none; }
+#scene canvas.px { image-rendering: pixelated; }
+#light { mix-blend-mode: screen; }
+#hint { position: fixed; left: 16px; bottom: 16px; font: 600 15px system-ui, sans-serif; color: #f3e6cf; background: rgba(20, 16, 12, .82);
+  border: 2px solid rgba(243, 230, 207, .25); padding: 8px 14px; cursor: pointer; }
+</style>
+</head>
+<body>
+<div id="scene">
+  <img id="base" alt="">
+  <canvas id="out" class="px"></canvas>
+  <canvas id="life"></canvas>
+  <canvas id="light"></canvas>
+  <canvas id="room" class="px"></canvas>
+</div>
+<button id="hint" type="button" hidden>Turn sound on</button>
+<script>
+/* One page for every fox scene: scene.html?s=<folder>. Everything specific to a scene lives in <folder>/scene.json
+   (the painting, where the glass is, the weather, lights, fire, steam, where the foxes breathe, and the sound).
+   The offline renderer (tools/render.js) drives it through window.__render, the same hook the older scenes use. */
+(async () => {
+  'use strict';
+  const R = window.__render || null;
+  const name = new URLSearchParams(location.search).get('s') || 'toymaker';
+  const C = await (await fetch(name + '/scene.json')).json();
+  document.title = C.title;
+  const [SW, SH] = C.size, GW = Math.round(SW / 2), GH = Math.round(SH / 2), TAU = Math.PI * 2;
+  const $ = id => document.getElementById(id);
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const clock = () => R ? R.t : performance.now() / 1000;
+
+  /* ---------- layout: the painting fills the screen; effects are drawn on a half-size grid so they keep the pixel look ---------- */
+  const scene = $('scene'), base = $('base');
+  function layer(id, w, h) { const c = $(id); c.width = w; c.height = h; c.style.width = SW + 'px'; c.style.height = SH + 'px'; return c.getContext('2d'); }
+  scene.style.width = base.style.width = SW + 'px'; scene.style.height = base.style.height = SH + 'px';
+  const ox = layer('out', GW, GH), rx = layer('room', GW, GH), lx = layer('light', SW, SH);
+  function fit() {
+    const s = Math.max(innerWidth / SW, innerHeight / SH);
+    scene.style.transform = `translate(${(innerWidth - SW * s) / 2}px,${(innerHeight - SH * s) / 2}px) scale(${s})`;
+  }
+  addEventListener('resize', fit); fit();
+
+  const load = src => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = name + '/' + src; });
+  const [painting, maskImg] = await Promise.all([load(C.image), load(C.mask)]);
+  base.src = painting.src; await base.decode();
+  const K = painting.naturalWidth / SW;                                   /* the painting is stored larger than the layout */
+  const bx = layer('life', painting.naturalWidth, painting.naturalHeight);
+  const mask = document.createElement('canvas'); mask.width = GW; mask.height = GH; mask.getContext('2d').drawImage(maskImg, 0, 0, GW, GH);
+  const small = document.createElement('canvas'); small.width = GW; small.height = GH;
+  const sx = small.getContext('2d', { willReadFrequently: true }); sx.drawImage(painting, 0, 0, GW, GH);
+  const pix = sx.getImageData(0, 0, GW, GH).data;
+
+  /* Wind strength, 0..1. Every period divides the 180 s loop, so the wind itself comes round seamlessly. */
+  const gust = t => clamp(0.5 + 0.26 * Math.sin(TAU * t / 60 + 1.3) + 0.18 * Math.sin(TAU * t / 36 + 4.1) + 0.12 * Math.sin(TAU * t / 22.5 + 0.4) + 0.08 * Math.sin(TAU * t / 12 + 2.2), 0, 1);
+
+  /* ---------- outside the glass ---------- */
+  const W = C.weather || {}, box = (W.box || [0, 0, SW, SH]).map(v => v / 2);
+  const flakes = [];
+  function newFlake(top) {
+    return { x: rand(box[0] - 20, box[2] + 60), y: top ? box[1] - rand(0, 8) : rand(box[1], box[3]), z: Math.pow(Math.random(), 1.4), ph: rand(0, TAU) };
+  }
+  if (W.type === 'snow') for (let i = 0; i < W.count; i++) flakes.push(newFlake(false));
+
+  const stars = [];
+  if (C.stars) for (let tries = 0; stars.length < C.stars.count && tries < 4000; tries++) {
+    const x = Math.floor(rand(C.stars.rect[0], C.stars.rect[2]) / 2), y = Math.floor(rand(C.stars.rect[1], C.stars.rect[3]) / 2), o = (y * GW + x) * 4;
+    const r = pix[o], g = pix[o + 1], b = pix[o + 2];
+    if (b > r + 6 && r + g + b < 200) stars.push({ x, y, w: TAU * Math.round(rand(20, 60)) / 180, ph: rand(0, TAU), a: rand(0.5, 1) });   /* open sky only */
+  }
+
+  let clouds = null;
+  if (W.clouds) {            /* long, wind-torn cloud that tiles sideways */
+    const tw = 512, th = Math.round((W.clouds.rect[3] - W.clouds.rect[1]) / 2), c = document.createElement('canvas'); c.width = tw; c.height = th;
+    const cx = c.getContext('2d'), im = cx.createImageData(tw, th), P = 16, lat = Array.from({ length: P * P }, Math.random), s = v => v * v * (3 - 2 * v);
+    const n = (u, v, k) => { const x0 = Math.floor(u), y0 = Math.floor(v), fx = s(u - x0), fy = s(v - y0), a = (i, j) => lat[(j % P) * P + ((i % k) + k) % k];
+      const top = a(x0, y0) + (a(x0 + 1, y0) - a(x0, y0)) * fx, bot = a(x0, y0 + 1) + (a(x0 + 1, y0 + 1) - a(x0, y0 + 1)) * fx; return top + (bot - top) * fy; };
+    for (let j = 0; j < th; j++) for (let i = 0; i < tw; i++) {
+      const v = 0.55 * n(i / tw * 4, j / th * 2.2, 4) + 0.3 * n(i / tw * 8, j / th * 4.5 + 3, 8) + 0.15 * n(i / tw * 16, j / th * 9 + 7, 16);
+      const edge = Math.min(1, j / (th * 0.25)) * Math.min(1, (th - j) / (th * 0.3)), o = (j * tw + i) * 4;
+      im.data[o] = 150; im.data[o + 1] = 164; im.data[o + 2] = 200; im.data[o + 3] = 255 * clamp((v - 0.5) * 3.4, 0, 1) * edge * W.clouds.alpha;
+    }
+    cx.putImageData(im, 0, 0); clouds = c;
+  }
+  const dust = [];
+  if (W.dust) for (let i = 0; i < W.dust; i++) dust.push({ x: rand(box[0], box[2]), y: rand(box[1], box[3]), v: rand(120, 260), a: rand(0.1, 0.28), len: Math.floor(rand(2, 6)) });
+
+  function weather(t, dt) {
+    const g = gust(t);
+    ox.globalCompositeOperation = 'source-over'; ox.clearRect(0, 0, GW, GH);
+    for (const s of stars) {
+      ox.fillStyle = `rgba(226,234,255,${(s.a * Math.pow(0.5 + 0.5 * Math.sin(s.w * t + s.ph), 3)).toFixed(2)})`; ox.fillRect(s.x, s.y, 1, 1);
+    }
+    if (clouds) {
+      const r = W.clouds.rect, off = (t * W.clouds.speed * (0.7 + 0.6 * g)) % 512;
+      ox.save(); ox.beginPath(); ox.rect(r[0] / 2, r[1] / 2, (r[2] - r[0]) / 2, (r[3] - r[1]) / 2); ox.clip();
+      for (let x = r[0] / 2 - off; x < r[2] / 2; x += 512) ox.drawImage(clouds, Math.round(x), Math.round(r[1] / 2));
+      ox.restore();
+    }
+    if (W.grass) {            /* pale waves running through the grass as each gust crosses the moor */
+      const r = W.grass.rect.map(v => v / 2), span = r[2] - r[0] + 120;
+      ox.save(); ox.beginPath(); ox.rect(r[0], r[1], r[2] - r[0], r[3] - r[1]); ox.clip(); ox.transform(1, 0, -0.7, 1, 0.7 * r[1], 0);
+      for (let k = 0; k < 4; k++) {
+        const x = r[2] + 100 - ((t * W.grass.speed + k * span / 4 + 23 * Math.sin(k * 1.7)) % span), gr = ox.createLinearGradient(x - 16, 0, x + 16, 0);
+        gr.addColorStop(0, 'rgba(214,224,240,0)'); gr.addColorStop(0.5, `rgba(214,224,240,${(W.grass.alpha * (0.4 + g)).toFixed(3)})`); gr.addColorStop(1, 'rgba(214,224,240,0)');
+        ox.fillStyle = gr; ox.fillRect(x - 16, r[1] - 60, 32, r[3] - r[1] + 120);
+      }
+      ox.restore();
+    }
+    for (const d of dust) {
+      d.x -= d.v * (0.5 + g) * dt; if (d.x < box[0] - 8) { d.x = box[2] + rand(0, 30); d.y = rand(box[1], box[3]); }
+      ox.fillStyle = `rgba(204,214,232,${d.a})`; ox.fillRect(Math.round(d.x), Math.round(d.y), d.len, 1);
+    }
+    if (W.type === 'snow') {
+      if (W.haze) { ox.fillStyle = `rgba(206,219,238,${(W.haze * (0.3 + 1.1 * g * g)).toFixed(3)})`; ox.fillRect(box[0], box[1], box[2] - box[0], box[3] - box[1]); }
+      const wind = W.wind * (1 - W.gusty + W.gusty * 2 * g);
+      for (let i = 0; i < flakes.length; i++) {
+        const f = flakes[i], vy = (W.fall[0] + (W.fall[1] - W.fall[0]) * f.z) * (1 + 0.3 * W.gusty * (g - 0.5));
+        const vx = wind * (0.45 + 0.75 * f.z) + Math.sin(t * 1.1 + f.ph) * W.sway;
+        f.x += vx * dt; f.y += vy * dt;
+        if (f.y > box[3] + 2 || f.x < box[0] - 30 || f.x > box[2] + 70) { flakes[i] = newFlake(f.y > box[3] + 2 || Math.random() < 0.5); if (f.x < box[0] - 30 && f.y <= box[3] + 2) flakes[i].x = box[2] + rand(0, 60); continue; }
+        const a = (0.3 + 0.65 * f.z) * W.alpha, sz = f.z > 0.84 ? 2 : 1, v = Math.hypot(vx, vy), len = W.streak ? clamp(Math.round(v * W.streak), 1, 7) : 1;
+        for (let k = 0; k < len; k++) {
+          ox.fillStyle = `rgba(236,242,252,${(a * (1 - k / len)).toFixed(2)})`;
+          ox.fillRect(Math.round(f.x - vx / v * k), Math.round(f.y - vy / v * k), sz, sz);
+        }
+      }
+    }
+    ox.globalCompositeOperation = 'destination-in'; ox.drawImage(mask, 0, 0);
+  }
+
+  /* ---------- light: fairy lights, firelight, lamps (added on top of the painting) ---------- */
+  const PERIODS = [3, 4, 4.5, 5, 6, 7.5, 9];
+  const twinkles = (C.twinkles || []).map(p => ({ x: p[0], y: p[1], r: p[2] || 10, c: p[3] || '255,214,150', w: TAU / PERIODS[Math.floor(Math.random() * PERIODS.length)], ph: rand(0, TAU) }));
+  const flick = (t, s) => clamp(0.5 + 0.2 * Math.sin(t * 2.3 + s) + 0.22 * Math.sin(t * 9.1 + 2 * s) + 0.16 * Math.sin(t * 14.3 + 3 * s) + 0.12 * Math.sin(t * 23.7 + 5 * s), 0, 1);
+  function blob(x, y, r, c, a) {
+    const g = lx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, `rgba(${c},${a.toFixed(3)})`); g.addColorStop(1, `rgba(${c},0)`);
+    lx.fillStyle = g; lx.fillRect(x - r, y - r, 2 * r, 2 * r);
+  }
+  function lights(t) {
+    lx.clearRect(0, 0, SW, SH); lx.globalCompositeOperation = 'lighter';
+    for (const p of twinkles) blob(p.x, p.y, p.r, p.c, 0.6 * Math.pow(0.5 + 0.5 * Math.sin(p.w * t + p.ph), 2));
+    (C.glows || []).forEach((g, i) => blob(g.x, g.y, g.r, g.c, g.base + g.amp * (g.kind === 'fire' ? flick(t, i + 1) : 0.5 + 0.5 * Math.sin(t * 0.9 + i))));
+    (C.flames || []).forEach((f, i) => {     /* a few bright patches wandering over the painted flames, so the fire is never still */
+      for (let k = 0; k < 3; k++) {
+        const s = i * 7 + k * 2.1, x = f.x + f.w * (0.5 + 0.32 * Math.sin(t * (5.3 + k) + s)), y = f.y + f.h * (0.55 + 0.3 * Math.sin(t * (7.1 + 1.3 * k) + 2 * s));
+        blob(x, y, f.w * 0.55, f.c || '255,176,70', 0.1 + 0.26 * flick(t * 1.4, s));
+      }
+    });
+  }
+
+  /* ---------- in the room: steam and sparks, and the foxes breathing ---------- */
+  const steam = [], sparks = [];
+  function room(t, dt) {
+    rx.clearRect(0, 0, GW, GH);
+    for (const s of C.steam || []) if (Math.random() < dt * (s.rate || 7)) steam.push({ x: s.x / 2 + rand(-1.5, 1.5), y: s.y / 2, life: rand(2, 3.4), age: 0, ph: rand(0, TAU), h: s.height || 1 });
+    for (let i = steam.length - 1; i >= 0; i--) {
+      const p = steam[i]; p.age += dt; if (p.age > p.life) { steam.splice(i, 1); continue; }
+      p.y -= 9 * p.h * dt; const k = p.age / p.life;
+      rx.fillStyle = `rgba(240,232,220,${(0.3 * Math.sin(Math.PI * k)).toFixed(2)})`;
+      rx.fillRect(Math.round(p.x + Math.sin(p.age * 2 + p.ph) * (1 + 4 * k)), Math.round(p.y), 1, 1);
+    }
+    for (const s of C.sparks || []) if (Math.random() < dt * (s.rate || 1.2)) sparks.push({ x: (s.x + rand(0, s.w)) / 2, y: s.y / 2, vx: rand(-4, 4), vy: -rand(14, 30), life: rand(0.7, 1.5), age: 0 });
+    for (let i = sparks.length - 1; i >= 0; i--) {
+      const p = sparks[i]; p.age += dt; if (p.age > p.life) { sparks.splice(i, 1); continue; }
+      p.x += (p.vx + Math.sin(p.age * 9) * 3) * dt; p.y += p.vy * dt;
+      rx.fillStyle = `rgba(255,${190 - Math.round(70 * p.age / p.life)},90,${(0.9 * (1 - p.age / p.life)).toFixed(2)})`; rx.fillRect(Math.round(p.x), Math.round(p.y), 1, 1);
+    }
+  }
+  /* Each fox is a soft-edged patch of the painting redrawn a touch taller and back, anchored where it lies. Periods divide the loop. */
+  const patches = (C.breathe || []).map(b => {
+    const c = document.createElement('canvas'); c.width = Math.round(2 * b.rx * K); c.height = Math.round(2 * b.ry * K); return { b, c, x: c.getContext('2d') };
+  });
+  function breathe(t) {
+    bx.clearRect(0, 0, bx.canvas.width, bx.canvas.height);
+    for (const { b, c, x } of patches) {
+      const s = 1 + b.amt * (0.5 - 0.5 * Math.cos(TAU * t / b.period + (b.phase || 0))), w = c.width, h = c.height;
+      x.globalCompositeOperation = 'source-over'; x.clearRect(0, 0, w, h);
+      x.drawImage(painting, (b.cx - b.rx) * K, (b.cy - b.ry) * K, w, h, 0, -(s - 1) * h, w, s * h);
+      x.globalCompositeOperation = 'destination-in'; x.save(); x.translate(w / 2, h / 2); x.scale(1, h / w);
+      const g = x.createRadialGradient(0, 0, 0, 0, 0, w / 2); g.addColorStop(0, '#000'); g.addColorStop(0.55, '#000'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      x.fillStyle = g; x.fillRect(-w / 2, -w / 2, w, w); x.restore();
+      bx.drawImage(c, Math.round((b.cx - b.rx) * K), Math.round((b.cy - b.ry) * K));
+    }
+  }
+
+  let last = clock();
+  function frame() {
+    const t = clock(), dt = Math.min(0.05, Math.max(0, t - last)); last = t;
+    weather(t, dt); lights(t); room(t, dt); breathe(t);
+    if (!R) requestAnimationFrame(frame);
+  }
+
+  /* ---------- sound: built from noise and short clicks, in stereo, with the detail kept where small speakers can play it ---------- */
+  let ac = null, A = null, running = false;
+  const S = C.sound || {}, atime = () => R ? R.t : ac.currentTime;
+  function noise(seconds, kind) {       /* 'brown' is deep and rumbling, 'pink' is the even hiss of moving air, 'white' is bright */
+    const n = Math.floor(ac.sampleRate * seconds), buf = ac.createBuffer(1, n, ac.sampleRate), d = buf.getChannelData(0);
+    let v = 0, b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+    for (let i = 0; i < n; i++) {
+      const w = Math.random() * 2 - 1;
+      if (kind === 'brown') { v = (v + 0.02 * w) / 1.02; d[i] = v * 3.5; }
+      else if (kind === 'pink') {
+        b0 = 0.99886 * b0 + w * 0.0555179; b1 = 0.99332 * b1 + w * 0.0750759; b2 = 0.969 * b2 + w * 0.153852; b3 = 0.8665 * b3 + w * 0.3104856;
+        b4 = 0.55 * b4 + w * 0.5329522; b5 = -0.7616 * b5 - w * 0.016898; d[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * 0.5362) * 0.11; b6 = w * 0.115926;
+      } else d[i] = w;
+    }
+    if (kind !== 'white') {            /* make the ends meet so the buffer loops without a bump */
+      const drift = d[n - 1] - d[0]; for (let i = 0; i < n; i++) d[i] -= drift * i / n;
+      const xf = Math.floor(ac.sampleRate * 0.25); for (let i = 0; i < xf; i++) { const k = i / xf; d[n - xf + i] = d[n - xf + i] * (1 - k) + d[i] * k; }
+    }
+    return buf;
+  }
+  const filt = (type, f, q) => { const b = ac.createBiquadFilter(); b.type = type; b.frequency.value = f; b.Q.value = q || 0.7; return b; };
+  const gain = v => { const g = ac.createGain(); g.gain.value = v; return g; };
+  const pan = p => { const n = ac.createStereoPanner(); n.pan.value = p; return n; };
+  function chain() { for (let i = 1; i < arguments.length; i++) arguments[i - 1].connect(arguments[i]); return arguments[arguments.length - 1]; }
+  function loop(buf, rate, at) { const s = ac.createBufferSource(); s.buffer = buf; s.loop = true; s.playbackRate.value = rate || 1; s.start(0, at || 0); return s; }
+  function click(at, f, q, peak, len, where, buf) {     /* a short filtered burst: a crackle, a tap on the glass, a clock tick */
+    const src = ac.createBufferSource(); src.buffer = buf || A.white; const g = gain(0), p = pan(where);
+    g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(peak, at + 0.002); g.gain.exponentialRampToValueAtTime(0.0004, at + len);
+    chain(src, filt('bandpass', f, q), g, p, A.master); src.start(at, Math.random() * 2.5, len + 0.03);
+  }
+
+  function buildAudio() {
+    ac = R ? R.ac : new (window.AudioContext || window.webkitAudioContext)();
+    const master = gain(0), comp = ac.createDynamicsCompressor();
+    comp.threshold.value = -20; comp.ratio.value = 2.5; comp.attack.value = 0.03; comp.release.value = 0.5;
+    chain(master, filt('highpass', 40, 0.7), comp, ac.destination);     /* nothing below 40 Hz: it is inaudible and only eats headroom */
+    A = { brown: noise(13, 'brown'), pink: noise(11, 'pink'), white: noise(4, 'white'), master, sides: [], next: {} };
+    const now = atime();
+    if (S.wind) for (const side of [-1, 1]) {       /* left and right read different stretches of the noise, so the wind has width */
+      const w = S.wind, p = pan(side * 0.75), o = side < 0 ? 0 : 5.3, bus = gain(w.level); chain(bus, p, master);
+      chain(loop(A.brown, 0.9, o), filt('highpass', 80), filt('lowpass', w.bedF || 380), gain(w.bed), bus);            /* the low weight of it */
+      const bodyG = gain(0.2), howlF = filt('bandpass', 700, w.q || 2.5), howlG = gain(0.05), airG = gain(0.01);
+      chain(loop(A.pink, 1, o + 1.7), filt('bandpass', w.bodyF || 480, 0.5), bodyG, bus);                               /* the rush */
+      chain(loop(A.pink, 1.2, o + 3.1), howlF, howlG, bus);                                                            /* the howl, which climbs in the gusts */
+      chain(loop(A.white, 1, o * 0.3), filt('bandpass', w.airF || 2800, 0.6), airG, bus);                              /* air and snow hissing on the glass */
+      A.sides.push({ bodyG, howlF, howlG, airG, lag: side < 0 ? 0 : 0.9 });
+    }
+    if (S.fire) {
+      const f = S.fire; A.roarG = gain(f.roar);
+      chain(loop(A.brown, 1.6, 2), filt('bandpass', f.kind === 'stove' ? 230 : 320, 0.5), A.roarG, pan(f.pan), master);
+      A.next.pop = now + 0.2; A.next.tink = now + rand(3, 8);
+    }
+    if (S.simmer) chain(loop(A.white, 1, 1), filt('bandpass', 5200, 0.8), gain(S.simmer.level), pan(S.simmer.pan), master);
+    if (S.clock) A.next.clock = Math.ceil(now);
+    if (S.taps) A.next.tap = now + 0.3;
+  }
+  const expo = mean => -Math.log(1 - Math.random()) * mean;
+  function tick() {       /* about twice a second: steer the wind and schedule the next couple of seconds of small sounds */
+    if (!running) return;
+    const now = atime(), ahead = now + 2.5, t = clock();
+    A.sides.forEach(s => {
+      const w = S.wind, g = gust(t + 0.6 - s.lag);
+      s.bodyG.gain.setTargetAtTime(w.body * (0.25 + g), now, 0.8);
+      s.howlF.frequency.setTargetAtTime(w.howlF[0] + (w.howlF[1] - w.howlF[0]) * g, now, 0.9);
+      s.howlG.gain.setTargetAtTime(w.howl * (0.04 + g * g), now, 0.7);
+      s.airG.gain.setTargetAtTime(w.air * (0.3 + g), now, 0.7);
+    });
+    if (S.fire) {
+      const f = S.fire, stove = f.kind === 'stove';
+      A.roarG.gain.setTargetAtTime(f.roar * (0.8 + 0.4 * Math.random()), now, 0.4);
+      if (A.next.pop < now) A.next.pop = now + 0.05;
+      while (A.next.pop < ahead) {
+        const big = Math.random() < 0.12, at = A.next.pop, where = clamp(f.pan + rand(-0.18, 0.18), -1, 1);
+        if (stove) click(at, big ? rand(500, 1100) : rand(900, 2600), rand(1, 2.5), f.crackle * (big ? rand(0.3, 0.6) : Math.pow(Math.random(), 2.2) * 0.3 + 0.02), big ? rand(0.03, 0.07) : rand(0.008, 0.03), where);
+        else click(at, big ? rand(500, 1400) : rand(1400, 5200), rand(0.8, 2.5), f.crackle * (big ? rand(0.3, 0.6) : Math.pow(Math.random(), 2.2) * 0.34 + 0.02), big ? rand(0.03, 0.07) : rand(0.006, 0.03), where);
+        A.next.pop += expo(Math.random() < 0.25 ? 0.05 : f.gap || 0.3);
+      }
+      while (f.tink && A.next.tink < ahead) {      /* the iron ticking as it warms and cools */
+        const o = ac.createOscillator(), g = gain(0), at = A.next.tink; o.frequency.value = rand(2300, 3700);
+        g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(f.tink * rand(0.5, 1), at + 0.001); g.gain.exponentialRampToValueAtTime(0.0003, at + 0.05);
+        chain(o, g, pan(f.pan), A.master); o.start(at); o.stop(at + 0.08); A.next.tink += rand(4, 13);
+      }
+    }
+    while (S.clock && A.next.clock < ahead) {      /* on the second exactly, so it lines up when the loop comes round */
+      const at = A.next.clock, tock = Math.round(at) % 2; click(at, tock ? 1500 : 2100, 6, S.clock.level, 0.014, S.clock.pan); A.next.clock += 1;
+    }
+    while (S.taps && A.next.tap < ahead) {         /* grains of snow ticking on the glass, more of them in the gusts */
+      click(A.next.tap, rand(2500, 6500), rand(2, 5), S.taps.level * (Math.pow(Math.random(), 2.5) + 0.06), rand(0.004, 0.012), rand(-0.95, -0.15));
+      A.next.tap += expo(1 / (S.taps.rate * (0.3 + 1.4 * gust(t))));
+    }
+  }
+  function setSound(on) {
+    if (on && !ac) buildAudio();
+    if (!ac) return;
+    if (!R) on ? ac.resume() : null;
+    running = on; A.master.gain.cancelScheduledValues(atime()); A.master.gain.setTargetAtTime(on ? 0.9 : 0, atime(), 0.15);
+    $('hint').textContent = on ? 'Turn sound off' : 'Turn sound on';
+  }
+
+  if (R) Object.assign(R, { frame, tick, strike() {}, start: () => setSound(true), ready: () => true });
+  else { $('hint').hidden = false; $('hint').addEventListener('click', () => setSound(!running)); setInterval(tick, 450); requestAnimationFrame(frame); }
+})();
+</script>
+</body>
+</html>
