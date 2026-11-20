@@ -13,8 +13,9 @@ Part 1 is built by `tools/build-part1.py`: ElevenLabs v4 narration (voice "Jen")
 
 ## Part 2 – The Cottage
 
-Everyone laughed when the will was read. Your grandmother had left you her cottage. “That tattered little shack?” your cousins snickered. “Who would ever want to live there?” You said nothing. You just took the key. Because they had never looked past the peeling paint. It was never little. And it was never a shack. Behind the ivy stood a beautiful Victorian cottage, waiting for someone to care. So you did. Room by room, you made it clean, modern, and warm. You work from home now, far from the shoebox apartments you had squeezed into for years. But the best room was the one nobody mentioned. At the very back of the house, behind a door that hadn’t been opened in years.
+To answer that, you have to go back to the day the will was read. Your cousins got the savings. The jewellery. The car. You got the cottage. They laughed. “That tattered little shack? Good luck selling it.” You didn’t sell it. That spring, your rent went up again, and your job went remote for good. So you packed your shoebox apartment into eleven boxes, and took the key. It was never little. And it was never a shack. Just a Victorian cottage no one had been kind to in years. You couldn’t afford builders. So you learned. One room at a time. One paycheck at a time. Paint in your hair. Her old radio on the windowsill. By autumn, every room was warm. Every room but one. At the back of the house, there was a door your grandmother had always kept locked.
 
+Part 2 is built by `tools/build-part2.py`: same voice and caption treatment as part 1, a cold, faded grade that warms as the house is restored, and a locked-door ending.
 
 ## Part 3 – The Glasshouse
 
