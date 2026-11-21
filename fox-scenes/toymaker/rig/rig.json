@@ -1,0 +1,90 @@
+{
+ "parts": [
+  {
+   "name": "head2",
+   "file": "head2.png",
+   "x": 426,
+   "y": 170,
+   "w": 70,
+   "h": 70,
+   "pivot": [
+    1000,
+    450
+   ],
+   "parent": null
+  },
+  {
+   "name": "ear2l",
+   "file": "ear2l.png",
+   "x": 426,
+   "y": 142,
+   "w": 24,
+   "h": 34,
+   "pivot": [
+    872,
+    345
+   ],
+   "parent": "head2"
+  },
+  {
+   "name": "ear2r",
+   "file": "ear2r.png",
+   "x": 452,
+   "y": 140,
+   "w": 33,
+   "h": 38,
+   "pivot": [
+    940,
+    352
+   ],
+   "parent": "head2"
+  },
+  {
+   "name": "head1",
+   "file": "head1.png",
+   "x": 352,
+   "y": 148,
+   "w": 80,
+   "h": 75,
+   "pivot": [
+    700,
+    430
+   ],
+   "parent": null
+  },
+  {
+   "name": "ear1f",
+   "file": "ear1f.png",
+   "x": 404,
+   "y": 120,
+   "w": 24,
+   "h": 32,
+   "pivot": [
+    833,
+    300
+   ],
+   "parent": "head1"
+  },
+  {
+   "name": "ear1n",
+   "file": "ear1n.png",
+   "x": 368,
+   "y": 119,
+   "w": 30,
+   "h": 45,
+   "pivot": [
+    765,
+    322
+   ],
+   "parent": "head1"
+  }
+ ],
+ "order": [
+  "head2",
+  "ear2l",
+  "ear2r",
+  "head1",
+  "ear1f",
+  "ear1n"
+ ]
+}

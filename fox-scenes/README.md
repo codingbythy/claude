@@ -25,23 +25,26 @@ Every scene uses the same page, `scene.html?s=<folder>`. Everything specific to 
 - `glass` and `mask`: where the window glass is, so weather is only drawn there (`tools/make-mask.py <folder>` rebuilds the mask).
 - `weather`, `stars`, `twinkles`, `glows`, `flames`, `sparks`, `steam`: what moves.
 - `breathe`: where each fox is, so it rises and falls as it sleeps.
-- `cuddle`: the opening. For the first second or so the foxes start slightly apart and nestle into each other.
+- `rig`: the foxes' heads and ears as separate pieces (outline, the point each turns about, and a soft joint at the neck or
+  ear base). `tools/rig.py <folder>` cuts them out of the picture into `<folder>/rig/` and fills in the fur behind them.
+- `cuddle`: where the bodies and the tail give a little when the foxes move.
 - `sound`: the wind, fire, clock and other sounds, all generated (nothing recorded or licensed).
 - `mix`: `ambient` (weather only) or `lofi` (music on top, weather a set distance underneath), and the loudness target.
 - `hours`: the video length. The thumbnail badge, the title and the build all read this number, so they cannot disagree.
 - `thumbnail`: the two lines of the scene name and the accent colour.
 
-### Picture and sound move together
+### What moves, and when
 
-Two curves in `scene.html` run everything that changes over the three-minute loop:
+- **The foxes.** In the opening seconds the right-hand fox has its head up; it comes down and pushes in under the other's
+  chin, the left-hand fox is nudged up and settles back on top, ears flick, the tail curls in, and both let out a long breath.
+  After that they sleep: they breathe, an ear flicks now and then, once in each three-minute loop they nuzzle closer and sigh.
+- **The weather.** Each three-minute loop starts with heavy snow, eases to a calm stretch in the middle and picks up again.
+  The wind sound gets louder and higher exactly when the snow gets heavier, and the snow ticking on the glass follows too.
+- **The fire.** It flares up and dies back. When it flares it crackles more, glows brighter and throws more sparks, and each
+  loud pop in the sound throws a burst of sparks in the picture.
 
-- `storm`: how hard it is snowing and blowing. It opens strong, peaks about 20 seconds in, falls to a calm stretch in the
-  middle and surges again. The number of flakes in the air, their speed and slant, and the haze all follow it, and so do the
-  wind's loudness and pitch and the snow ticking on the glass.
-- `fireLife`: how lively the fire is. Crackle rate and loudness, the glow, the flames and the sparks all follow it, and each big
-  pop in the sound throws a burst of sparks and a flash of firelight in the picture.
-
-Both curves repeat exactly every 180 seconds, so the loop comes round without a jump.
+All of this repeats every 180 seconds, so the loop comes round without a jump. The timings live in `scene.html`
+(`storm`, `fireLife` and `poseAt`).
 
 ## Making a preview
 
