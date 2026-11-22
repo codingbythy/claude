@@ -26,7 +26,7 @@ html, body { margin: 0; height: 100%; background: #07090d; overflow: hidden; }
 /* One page for every fox scene: scene.html?s=<folder>. Everything specific to a scene lives in <folder>/scene.json
    (the painting, where the glass is, the weather, lights, fire, steam, the foxes, and the sound).
    The offline renderer (tools/render.js) drives it through window.__render, the same hook the older scenes use.
-   Add &open=<seconds> to play the opening, where the foxes nestle into each other, starting at that moment. */
+ */
 (async () => {
   'use strict';
   const R = window.__render || null;
@@ -199,9 +199,10 @@ html, body { margin: 0; height: 100%; background: #07090d; overflow: hidden; }
   }
 
   /* ---------- the foxes ----------
-     Their heads and ears are separate pieces cut from the painting (tools/rig.py), lying on a copy of the painting with fur
-     filled in behind them. With every piece at rest the picture is the painting; turning a piece about its neck or ear base
-     is what makes a fox lift its head, push in, or flick an ear. Bodies and tails are nudged by a gentle bend of the picture.
+     They sleep: their bodies rise and fall, and now and then an ear flicks. Heads and ears are separate pieces cut from the
+     painting (tools/rig.py), lying on a copy of the painting with fur filled in behind them; with every piece at rest the
+     picture is the painting. Only the ears turn, each about its own base. The heads stay still (they are pieces so that an ear
+     slides behind the right things).
      Breathing: each body is a soft-edged patch redrawn a touch taller and back, anchored where the fox lies. */
   const RIG = C.rig ? await (await fetch(name + '/rig/rig.json')).json() : null, parts = {};
   let plate = painting;
@@ -210,59 +211,25 @@ html, body { margin: 0; height: 100%; background: #07090d; overflow: hidden; }
   const patches = (C.breathe || []).map(b => {
     const c = document.createElement('canvas'); c.width = Math.round(2 * b.rx * K); c.height = Math.round(2 * b.ry * K); return { b, c, x: c.getContext('2d') };
   });
-  const openAt = Q.has('open') ? +Q.get('open') : (R ? null : clock() + 0.4), CELL = 8, BEND = (C.cuddle && C.cuddle.parts) || [];
-  let bendBox = null;
-  if (BEND.length) {
-    let x0 = SW, y0 = SH, x1 = 0, y1 = 0;
-    for (const p of BEND) { x0 = Math.min(x0, p.cx - 2.2 * p.r); y0 = Math.min(y0, p.cy - 2.2 * p.r); x1 = Math.max(x1, p.cx + 2.2 * p.r); y1 = Math.max(y1, p.cy + 2.2 * p.r); }
-    bendBox = [Math.max(0, Math.floor(x0 / CELL) * CELL), Math.max(0, Math.floor(y0 / CELL) * CELL), Math.min(SW, x1), Math.min(SH, y1)];
-  }
-  /* small timing helpers: key() eases through a list of [seconds, value]; twitch() is one quick there-and-back; swell() rises and falls once */
-  const key = (k, u) => { if (u <= k[0][0]) return k[0][1]; for (let i = 1; i < k.length; i++) if (u < k[i][0]) { const x = (u - k[i - 1][0]) / (k[i][0] - k[i - 1][0]); return k[i - 1][1] + (k[i][1] - k[i - 1][1]) * x * x * (3 - 2 * x); } return k[k.length - 1][1]; };
+  /* one quick there-and-back of an ear: `amp` degrees at most, over `dur` seconds, starting `at` seconds into the loop */
   const twitch = (u, at, amp, dur) => { const x = (u - at) / (dur || 0.36); return x <= 0 || x >= 1 ? 0 : amp * Math.sin(TAU * x) * (1 - x) * 1.5; };
-  const swell = (u, a, b) => { const x = (u - a) / (b - a); return x <= 0 || x >= 1 ? 0 : Math.pow(Math.sin(Math.PI * x), 2); };
-  /* Where every piece is at time t. h1 is the left fox's head, h2 the right fox's: r is a turn in degrees about the neck, x and y a
-     shift. e.. are the ears, b1 b2 the bodies, t2 the right fox's tail, sigh a deeper breath. Everything is 0 at rest. */
-  function poseAt(t) {
-    const P = { h1r: 0, h1x: 0, h1y: 0, h2r: 0, h2x: 0, h2y: 0, e1n: 0, e1f: 0, e2l: 0, e2r: 0, b1: 0, b2: 0, t2: 0, sigh: 0 };
-    /* asleep: now and then an ear flicks, once a loop they nuzzle closer and sigh, a tail twitches. Timed within the loop so it comes round. */
-    const q = (((t - 14) % LOOP) + LOOP) % LOOP;
-    P.e1n = twitch(q, 23.2, -10) + twitch(q, 97.4, -11) + twitch(q, 97.95, -6) + twitch(q, 141.3, -9);
-    P.e2r = twitch(q, 49.5, 9) + twitch(q, 118.2, 10) + twitch(q, 118.7, 5);
-    P.e2l = twitch(q, 71.3, 10) + twitch(q, 160.4, 9);
-    P.e1f = twitch(q, 133.6, -7);
-    const n2 = swell(q, 84, 88.5), n1 = swell(q, 84.5, 89.5);
-    P.h2r = -1.8 * n2; P.h2x = -3 * n2; P.h1r = 1.0 * n1; P.b2 = -0.35 * n2;
-    P.t2 = twitch(q, 36, 0.7, 0.9) + twitch(q, 110, 0.6, 0.9);
-    P.sigh = swell(q, 87.5, 93);
-    /* the opening: the right fox has its head up; it comes down and pushes in under the other's chin, the left fox is nudged up,
-       settles back down on top, ears flick, the tail curls in, and both let out a long breath */
-    if (openAt !== null && t - openAt < 4.5) {
-      const u = t - openAt;
-      P.h2r += key([[0, 11], [0.16, 10.6], [0.72, -2.2], [1.12, 0.9], [1.6, -0.25], [2.1, 0]], u);
-      P.h2x += key([[0, 12], [0.72, -5], [1.15, 1.2], [1.7, 0]], u);
-      P.h2y += key([[0, -3], [0.72, 2], [1.2, 0]], u);
-      P.h1r += key([[0, -2.5], [0.45, -2.8], [0.82, -6], [1.32, 1.3], [1.8, -0.3], [2.3, 0]], u);
-      P.h1x += key([[0, -3], [0.82, -7], [1.38, 1], [2, 0]], u);
-      P.h1y += key([[0, 0], [0.82, -2], [1.35, 1], [2, 0]], u);
-      P.e2l += twitch(u, 0.98, 13); P.e2r += twitch(u, 1.06, 7); P.e1n += twitch(u, 1.55, -11); P.e1f += twitch(u, 1.62, -5);
-      P.b2 += key([[0, 1], [0.72, -0.3], [1.2, 0.08], [1.8, 0]], u); P.b1 += key([[0, 0.4], [0.82, 1], [1.4, -0.1], [2, 0]], u);
-      P.t2 += key([[0, 1], [1.0, 1], [2.2, -0.2], [3.0, 0]], u);
-      P.sigh += key([[0, 0], [0.9, 0], [2.0, 1], [3.8, 0]], u);
-    }
-    return P;
-  }
-  const MOVES = { head1: ['h1r', 'h1x', 'h1y'], head2: ['h2r', 'h2x', 'h2y'], ear1n: ['e1n'], ear1f: ['e1f'], ear2l: ['e2l'], ear2r: ['e2r'] };
-  function place(p, P) {          /* turn and shift the drawing surface the way this piece has moved */
-    const m = MOVES[p.name] || [], r = P[m[0]] || 0, x = P[m[1]] || 0, y = P[m[2]] || 0;
-    if (!r && !x && !y) return;
-    stx.translate((p.pivot[0] + x) * K, (p.pivot[1] + y) * K); stx.rotate(r * Math.PI / 180); stx.translate(-p.pivot[0] * K, -p.pivot[1] * K);
+  /* When each ear flicks, in seconds from the start of the loop: [time, degrees]. The first second of the video has two, so
+     there is life on screen straight away; after that they are spread out and uneven, the way a sleeping animal's are. */
+  const FLICKS = {
+    ear1n: [[0.25, -11], [0.72, -6], [23.2, -10], [58.6, -8], [97.4, -11], [97.95, -6], [141.3, -9], [168.2, -7]],
+    ear2r: [[0.55, 10], [12.4, 8], [49.5, 9], [83.1, 7], [118.2, 10], [118.7, 5], [152.8, 9]],
+    ear2l: [[35.7, 9], [71.3, 10], [129.5, 8], [160.4, 9]],
+    ear1f: [[0.3, -6], [44.2, -7], [106.8, -6], [133.6, -7]]
+  };
+  function earAt(n, t) {
+    const q = (((t - 14) % LOOP) + LOOP) % LOOP; let r = 0;       /* the loop starts 14 s into the scene's own clock */
+    for (const [at, amp] of FLICKS[n] || []) r += twitch(q, at, amp);
+    return r;
   }
   function foxes(t) {
-    const P = poseAt(t);
     px.globalCompositeOperation = 'source-over'; px.drawImage(plate, 0, 0, stW, stH);
     for (const { b, c, x } of patches) {
-      const s = 1 + b.amt * (0.5 - 0.5 * Math.cos(TAU * t / b.period + (b.phase || 0))) + 0.016 * P.sigh, w = c.width, h = c.height;
+      const s = 1 + b.amt * (0.5 - 0.5 * Math.cos(TAU * t / b.period + (b.phase || 0))), w = c.width, h = c.height;
       x.globalCompositeOperation = 'source-over'; x.clearRect(0, 0, w, h);
       x.drawImage(plate, (b.cx - b.rx) * K * pk, (b.cy - b.ry) * K * pk, w * pk, h * pk, 0, -(s - 1) * h, w, s * h);
       x.globalCompositeOperation = 'destination-in'; x.save(); x.translate(w / 2, h / 2); x.scale(1, h / w);
@@ -271,22 +238,10 @@ html, body { margin: 0; height: 100%; background: #07090d; overflow: hidden; }
       px.drawImage(c, Math.round((b.cx - b.rx) * K), Math.round((b.cy - b.ry) * K));
     }
     stx.setTransform(1, 0, 0, 1, 0, 0); stx.drawImage(pose, 0, 0);
-    if (bendBox && (Math.abs(P.b1) + Math.abs(P.b2) + Math.abs(P.t2) > 0.004)) {
-      for (let y = bendBox[1]; y < bendBox[3]; y += CELL) for (let x = bendBox[0]; x < bendBox[2]; x += CELL) {
-        let dx = 0, dy = 0; const mx = x + CELL / 2, my = y + CELL / 2;
-        for (const p of BEND) {
-          const k = P[p.ch] || 0; if (!k) continue;
-          const ex = mx - p.cx, ey = my - p.cy, w = k * Math.exp(-(ex * ex + ey * ey) / (2 * p.r * p.r)), a = (p.rot || 0) * Math.PI / 180;
-          dx += w * (p.dx - a * ey); dy += w * (p.dy + a * ex);
-        }
-        if (Math.abs(dx) + Math.abs(dy) < 0.02) continue;
-        stx.drawImage(pose, (x - dx) * K, (y - dy) * K, CELL * K, CELL * K, x * K, y * K, CELL * K, CELL * K);
-      }
-    }
     if (RIG) for (const n of RIG.order) {
-      const p = parts[n]; stx.save();
-      if (p.parent) place(parts[p.parent], P);
-      place(p, P); stx.drawImage(p.img, p.x, p.y); stx.restore();
+      const p = parts[n], r = earAt(n, t); stx.save();
+      if (r) { stx.translate(p.pivot[0] * K, p.pivot[1] * K); stx.rotate(r * Math.PI / 180); stx.translate(-p.pivot[0] * K, -p.pivot[1] * K); }
+      stx.drawImage(p.img, p.x, p.y); stx.restore();
     }
   }
 

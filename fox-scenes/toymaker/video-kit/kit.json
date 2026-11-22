@@ -3,8 +3,15 @@
  "file_name": "christmas-snowfall-at-the-toymakers-workshop-2h",
  "hours": 2,
  "loop_seconds": 180,
- "open_seconds": 6,
  "outro_seconds": 20,
+ "width": 640,
+ "height": 360,
+ "youtube": {
+  "scale": 4,
+  "crf": 21,
+  "preset": "faster",
+  "audio_bitrate": "384k"
+ },
  "ambience_lufs": -20,
  "mix": {
   "mode": "lofi",
@@ -15,14 +22,11 @@
    "style": "lofi"
   },
   "ambience_vs_music_db": -7,
-  "target_lufs": -16,
+  "target_lufs": -14,
   "music_eq": "bass=g=-6:f=200:w=0.7,treble=g=9:f=1100:w=0.6"
  },
  "files": [
-  "open.mp4",
-  "loop-a.mp4",
-  "loop-b.mp4",
-  "outro.mp4",
+  "loop-360.mp4",
   "ambience.flac",
   "build.py",
   "music-long.py"

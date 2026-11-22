@@ -1,25 +1,29 @@
 #!/usr/bin/env python3
 """Assembles the long video from the parts in this folder. Copied into every scene's video-kit as build.py.
 
-Usage: build.py [output.mp4] [--loops N]
+Usage: build.py [output.mp4] [--loops N] [--scale 4]
 With no --loops, it makes the number of hours written in kit.json. Needs ffmpeg, and numpy for scenes with music.
-The picture is copied without re-encoding; only the sound is mixed.
 
-How the video is laid out:
-  open.mp4      the first 6 s: the foxes nestle into each other (it is the start of the loop, with that added)
-  loop-b.mp4    the rest of the 3-minute loop
-  loop-a.mp4 + loop-b.mp4, repeated: the loop itself
-  outro.mp4     20 s of the loop fading to black
-The sound starts at full level on the first frame and fades out with the picture at the end.
+What it does, in order:
+  1. Enlarges the loop. loop-360.mp4 is the three-minute loop at the scene's own size (640x360, every pixel exact). It is
+     scaled up by a whole number (4 = 2560x1440, 3 = 1920x1080) with hard pixel edges, so the picture stays perfectly sharp,
+     and encoded once at high quality for YouTube. The ending (20 s fading to black) is made the same way.
+  2. Mixes the sound: the weather loop, plus music composed for the whole length when the scene has it, levelled to the
+     loudness YouTube plays at. Full level from the first frame; it fades out with the picture at the end.
+  3. Joins loop after loop without re-encoding, adds the ending and the sound.
 """
-import json, os, re, subprocess, sys
+import json, math, os, re, subprocess, sys
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
-K = json.load(open('kit.json')); M = K['mix']
-args = [a for a in sys.argv[1:] if not a.startswith('--')]
-loops = int(sys.argv[sys.argv.index('--loops') + 1]) if '--loops' in sys.argv else round(K['hours'] * 3600 / K['loop_seconds'])
+K = json.load(open('kit.json')); M = K['mix']; Y = K['youtube']
+argv = sys.argv[1:]
+opt = lambda name, default: argv[argv.index(name) + 1] if name in argv else default
+args = [a for i, a in enumerate(argv) if not a.startswith('--') and (i == 0 or not argv[i - 1].startswith('--'))]
+loops = int(opt('--loops', round(K['hours'] * 3600 / K['loop_seconds'])))
+scale = int(opt('--scale', Y['scale']))
 out = args[0] if args else f"{K['file_name']}.mp4"
 total = loops * K['loop_seconds'] + K['outro_seconds']
+W, H = K['width'] * scale, K['height'] * scale
 
 
 def run(cmd):
@@ -31,30 +35,40 @@ def loudness(path, chain=''):
     return float(re.search(r'I:\s+(-?[\d.]+) LUFS', log[log.rindex('Summary:'):]).group(1))
 
 
+# 1. the picture: whole-number enlargement with hard edges, tagged as standard HD colour (BT.709) so YouTube reads it correctly
+big = f"scale={W}:{H}:flags=neighbor+accurate_rnd+full_chroma_int:out_color_matrix=bt709:out_range=tv,format=yuv420p"
+V = ['-c:v', 'libx264', '-preset', Y['preset'], '-crf', str(Y['crf']), '-profile:v', 'high', '-bf', '2', '-g', '60', '-keyint_min', '60', '-sc_threshold', '0', '-r', '30',
+     '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv', '-video_track_timescale', '15360', '-an']
+ff = ['ffmpeg', '-y', '-loglevel', 'error']
+print(f'Enlarging the loop to {W}x{H}...')
+run(ff + ['-i', 'loop-360.mp4', '-vf', big] + V + ['loop.mp4'])
+run(ff + ['-i', 'loop-360.mp4', '-t', str(K['outro_seconds']), '-vf', f"fade=out:st={K['outro_seconds'] - 10}:d=10,{big}"] + V + ['outro.mp4'])
+
+# 2. the sound
 inputs = ['-stream_loop', '-1', '-i', 'ambience.flac']
-tail = f"alimiter=limit=0.84:level=disabled,afade=out:st={total - 14}:d=14[a]"
+tail = f"alimiter=limit=0.89:level=disabled,afade=out:st={total - 14}:d=14[a]"
 music = M.get('music')
 if music:
-    # compose music for the whole length (it does not repeat), then sit the weather a set distance underneath it
     print(f'Composing {total // 60} minutes of music...')
     run(['python3', 'music-long.py', str(total + 2), 'music.wav', str(music['seed']), str(music.get('transpose', 0)), '0.075', '1.0', str(music.get('bpm', 0)), music.get('style', 'ambient')])
     eq = M['music_eq'] + ',' if M.get('music_eq') else ''
     mus = loudness('music.wav', eq)
-    amb_level = -20 + M['ambience_vs_music_db']
-    both = 10 * __import__('math').log10(10 ** (-20 / 10) + 10 ** (amb_level / 10))            # the two together
+    amb_level = -20 + M['ambience_vs_music_db']                                      # the weather sits this far under the music
+    both = 10 * math.log10(10 ** (-20 / 10) + 10 ** (amb_level / 10))                # the two together
     graph = (f"[0:a]volume={amb_level - K['ambience_lufs']:.2f}dB[amb];[1:a]aresample=48000,{eq}volume={-20 - mus:.2f}dB[mus];"
              f"[amb][mus]amix=inputs=2:normalize=0,volume={M['target_lufs'] - both:.2f}dB,{tail}")
     inputs += ['-i', 'music.wav']
 else:
     graph = f"[0:a]volume={M['target_lufs'] - K['ambience_lufs']:.2f}dB,{tail}"
 print('Mixing the sound...')
-run(['ffmpeg', '-y', '-loglevel', 'error'] + inputs + ['-filter_complex', graph, '-map', '[a]', '-t', str(total), '-c:a', 'aac', '-b:a', '192k', 'audio.m4a'])
+run(ff + inputs + ['-filter_complex', graph, '-map', '[a]', '-t', str(total), '-c:a', 'aac', '-b:a', Y['audio_bitrate'], '-ar', '48000', 'audio.m4a'])
 
+# 3. join
 with open('list.txt', 'w') as f:
-    f.write('file open.mp4\nfile loop-b.mp4\n' + 'file loop-a.mp4\nfile loop-b.mp4\n' * (loops - 1) + 'file outro.mp4\n')
-print('Joining the picture...')
-run(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', 'list.txt', '-i', 'audio.m4a', '-map', '0:v', '-map', '1:a', '-c', 'copy', '-shortest', '-movflags', '+faststart', out])
-for f in ('list.txt', 'audio.m4a', 'music.wav'):
+    f.write('file loop.mp4\n' * loops + 'file outro.mp4\n')
+print('Joining...')
+run(ff + ['-f', 'concat', '-safe', '0', '-i', 'list.txt', '-i', 'audio.m4a', '-map', '0:v', '-map', '1:a', '-c', 'copy', '-shortest', '-movflags', '+faststart', out])
+for f in ('list.txt', 'audio.m4a', 'music.wav', 'loop.mp4', 'outro.mp4'):
     if os.path.exists(f):
         os.remove(f)
-print(f'Built {out}: {total // 3600} h {total % 3600 // 60} min {total % 60} s')
+print(f'Built {out}: {total // 3600} h {total % 3600 // 60} min {total % 60} s, {W}x{H}, {os.path.getsize(out) / 1e9:.1f} GB')

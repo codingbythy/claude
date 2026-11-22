@@ -3,18 +3,22 @@
  "file_name": "blizzard-at-the-stationmasters-waiting-room-2h",
  "hours": 2,
  "loop_seconds": 180,
- "open_seconds": 6,
  "outro_seconds": 20,
+ "width": 640,
+ "height": 360,
+ "youtube": {
+  "scale": 4,
+  "crf": 21,
+  "preset": "faster",
+  "audio_bitrate": "384k"
+ },
  "ambience_lufs": -20,
  "mix": {
   "mode": "ambient",
-  "target_lufs": -16
+  "target_lufs": -14
  },
  "files": [
-  "open.mp4",
-  "loop-a.mp4",
-  "loop-b.mp4",
-  "outro.mp4",
+  "loop-360.mp4",
   "ambience.flac",
   "build.py"
  ]

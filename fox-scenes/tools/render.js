@@ -1,17 +1,21 @@
 // Renders a fox scene frame by frame with its sound, offline (not in real time).
-// Usage: node render.js <page-url> <out-dir> <seconds> [--audio-only]
-// Writes <out-dir>/raw.mp4 (1920x1080, 30 fps, picture only) and <out-dir>/raw.f32 (48 kHz stereo, 32-bit float, interleaved).
+// Usage: node render.js <page-url> <out-dir> <seconds> [--audio-only] [--size 640x360]
+// Writes <out-dir>/raw.mp4 (30 fps, picture only) and <out-dir>/raw.f32 (48 kHz stereo, 32-bit float, interleaved).
+// Without --size the picture is 1920x1080. With --size 640x360 a pixel-grid scene is captured at its own resolution, one
+// screen pixel per scene pixel and without any compression loss, so it can later be scaled up by whole numbers (x3 = 1080p,
+// x4 = 1440p) and stay perfectly sharp. It also renders several times faster.
 // Both start PRE seconds into the scene, once the snow, steam and wind have settled, so the first frame is already "mid-storm".
 const { chromium } = require('playwright');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const args = process.argv.slice(2), audioOnly = args.includes('--audio-only');
-const [url, out, secs] = args.filter(a => !a.startsWith('--'));
+const size = args.includes('--size') ? args[args.indexOf('--size') + 1].split('x').map(Number) : null;
+const [url, out, secs] = args.filter((a, i) => !a.startsWith('--') && args[i - 1] !== '--size');
 const FPS = 30, PRE = 10, TOTAL = PRE + (+secs), SR = 48000;
 (async () => {
   fs.mkdirSync(out, { recursive: true });
   const b = await chromium.launch();
-  const p = await b.newPage({ viewport: { width: 1920, height: 1080 } });
+  const p = await b.newPage({ viewport: size ? { width: size[0], height: size[1] } : { width: 1920, height: 1080 } });
   p.on('pageerror', e => console.error('PAGEERR', String(e)));
   p.on('console', m => { if (m.type() === 'error') console.error('CONSOLE', m.text()); });
   await p.addInitScript(({ TOTAL, SR }) => {
@@ -27,12 +31,14 @@ const FPS = 30, PRE = 10, TOTAL = PRE + (+secs), SR = 48000;
   if (audioOnly) {
     await p.evaluate(TOTAL => { const R = window.__render; for (let t = 0; t < TOTAL; t += 0.45) { R.t = t; R.tick(); } }, TOTAL);
   } else {
-    const ff = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(FPS), '-c:v', 'mjpeg', '-i', '-', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '12', '-pix_fmt', 'yuv420p', out + '/raw.mp4'], { stdio: ['pipe', 'inherit', 'inherit'] });
+    const enc = size ? ['-c:v', 'png', '-i', '-', '-c:v', 'libx264rgb', '-preset', 'veryfast', '-crf', '0']                      // exact pixels in, lossless out
+      : ['-c:v', 'mjpeg', '-i', '-', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '12', '-pix_fmt', 'yuv420p'];
+    const ff = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(FPS), ...enc, out + '/raw.mp4'], { stdio: ['pipe', 'inherit', 'inherit'] });
     const N = Math.round(TOTAL * FPS); let nextTick = 0;
     for (let i = 0; i < N; i++) {
       const t = i / FPS, doTick = t >= nextTick; if (doTick) nextTick += 0.45;
       await p.evaluate(({ t, doTick }) => { const R = window.__render; R.t = t; if (doTick) R.tick(); R.frame(); }, { t, doTick });
-      if (t >= PRE) { const buf = await p.screenshot({ type: 'jpeg', quality: 96 }); if (!ff.stdin.write(buf)) await new Promise(r => ff.stdin.once('drain', r)); }
+      if (t >= PRE) { const buf = await p.screenshot(size ? { type: 'png' } : { type: 'jpeg', quality: 96 }); if (!ff.stdin.write(buf)) await new Promise(r => ff.stdin.once('drain', r)); }
       if (i % 600 === 0) console.log('frame', i, '/', N, ((Date.now() - t0) / 1000).toFixed(0) + 's');
     }
     ff.stdin.end(); await new Promise(r => ff.on('close', r));

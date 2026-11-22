@@ -21,13 +21,15 @@ prompt that made its painting in `painting-prompt.txt`. Do not use ElevenLabs fo
 Every scene uses the same page, `scene.html?s=<folder>`. Everything specific to a scene is in its `scene.json`:
 
 - `image`: the picture the scene page shows (`room.webp`). It is made from `painting-1280.png`, the painting as it arrived, by
-  `tools/grade.py <folder>` using the `grade` settings (colour grade; for the toymaker also a true pixel grid and a limited palette).
+  `tools/grade.py <folder>` using the `grade` settings: the room is relit (a warm pool of light over the foxes and around the
+  fire and lamps, foreground furniture and clutter let fall into shadow, the window kept cold and clear), lamps and flames are
+  given a soft glow, and the picture is snapped to a true pixel grid (640×360) with a limited palette.
 - `glass` and `mask`: where the window glass is, so weather is only drawn there (`tools/make-mask.py <folder>` rebuilds the mask).
 - `weather`, `stars`, `twinkles`, `glows`, `flames`, `sparks`, `steam`: what moves.
 - `breathe`: where each fox is, so it rises and falls as it sleeps.
 - `rig`: the foxes' heads and ears as separate pieces (outline, the point each turns about, and a soft joint at the neck or
-  ear base). `tools/rig.py <folder>` cuts them out of the picture into `<folder>/rig/` and fills in the fur behind them.
-- `cuddle`: where the bodies and the tail give a little when the foxes move.
+  ear base). `tools/rig.py <folder>` cuts them out of the picture into `<folder>/rig/` and fills in the fur behind them. Run it
+  again whenever the picture is regraded.
 - `sound`: the wind, fire, clock and other sounds, all generated (nothing recorded or licensed).
 - `mix`: `ambient` (weather only) or `lofi` (music on top, weather a set distance underneath), and the loudness target.
 - `hours`: the video length. The thumbnail badge, the title and the build all read this number, so they cannot disagree.
@@ -35,16 +37,15 @@ Every scene uses the same page, `scene.html?s=<folder>`. Everything specific to 
 
 ### What moves, and when
 
-- **The foxes.** In the opening seconds the right-hand fox has its head up; it comes down and pushes in under the other's
-  chin, the left-hand fox is nudged up and settles back on top, ears flick, the tail curls in, and both let out a long breath.
-  After that they sleep: they breathe, an ear flicks now and then, once in each three-minute loop they nuzzle closer and sigh.
+- **The foxes.** They sleep. Their bodies rise and fall as they breathe, and now and then an ear flicks: twice in the first
+  second of the loop, so there is life on screen straight away, then every 10 to 40 seconds. Nothing else about them moves.
 - **The weather.** Each three-minute loop starts with heavy snow, eases to a calm stretch in the middle and picks up again.
   The wind sound gets louder and higher exactly when the snow gets heavier, and the snow ticking on the glass follows too.
 - **The fire.** It flares up and dies back. When it flares it crackles more, glows brighter and throws more sparks, and each
   loud pop in the sound throws a burst of sparks in the picture.
 
 All of this repeats every 180 seconds, so the loop comes round without a jump. The timings live in `scene.html`
-(`storm`, `fireLife` and `poseAt`).
+(`storm`, `fireLife` and `FLICKS`).
 
 ## Making a preview
 
@@ -61,20 +62,19 @@ not kept in the repository; the same command always rebuilds the same clip. Each
 three rules, and the report says pass or fail for each:
 
 1. Full level from the first second: no fade-in, no silence, no title card.
-2. Loudness on target (-16 LUFS) with peaks under -1 dBFS.
+2. Loudness on target (-14 LUFS, the level YouTube plays at) with peaks at or under -1 dBFS.
 3. Still clearly there on a phone speaker: no more than 7 dB lost through a small-speaker filter.
 
-Thumbnails: `node tools/still.js "http://127.0.0.1:8791/scene.html?s=toymaker" frame.jpg 12`, then
-`node tools/thumb.js toymaker frame.jpg <out-dir>` writes the 1280×720 thumbnail and a 320×180 copy for judging it at feed size.
+Thumbnails: `node tools/still.js "http://127.0.0.1:8791/scene.html?s=toymaker" frame 36 --size 1920x1080`, then
+`node tools/thumb.js toymaker frame-36.png toymaker/youtube` writes three versions for YouTube's "Test & compare" (the whole
+scene with its name, closer with its name, closer with no name), each at 1280×720 with a 320×180 copy for judging it at feed
+size. They are a little brighter and richer than the video, on purpose. `python3 tools/youtube-text.py toymaker` writes the
+title, description, tags and pinned comment.
 
 ## Making the loop and the two-hour video
 
 ```bash
-node fox-scenes/tools/render.js "http://127.0.0.1:8791/scene.html?s=toymaker" fox-scenes/work/toymaker/loop 184
-```
-
-```bash
-node fox-scenes/tools/render.js "http://127.0.0.1:8791/scene.html?s=toymaker&open=14" fox-scenes/work/toymaker/open 10
+node fox-scenes/tools/render.js "http://127.0.0.1:8791/scene.html?s=toymaker" fox-scenes/work/toymaker/loop 184 --size 640x360
 ```
 
 ```bash
@@ -85,9 +85,17 @@ python3 fox-scenes/tools/make-loop.py fox-scenes/work/toymaker/loop
 python3 fox-scenes/tools/make-kit.py toymaker
 ```
 
-The first command renders the loop (about 25 minutes), the second the opening seconds with the foxes nestling in, the third
-blends the loop's end into its start, and the fourth writes `toymaker/video-kit/`. The kit's `build.py` assembles the long
-video: the opening, then the loop for as many hours as `hours` says, then a 20-second fade. `make-video.ipynb` does the same in
-Google Colab and saves the result to Google Drive; it downloads the kit from this branch, so the branch name is written in it.
+The first command renders the loop at the scene's own size, every pixel exact (about 8 minutes); the second blends the
+loop's end into its start; the third writes `toymaker/video-kit/` (about 70 MB). The kit's `build.py` then makes the upload:
+
+1. It enlarges the loop four times over to 2560×1440 with hard pixel edges, so it stays perfectly sharp, and encodes it once
+   (H.264 High, 30 fps, BT.709, tagged). YouTube gives uploads above 1080p a higher-quality stream, and each of its smaller
+   sizes (1080p, 720p) is a whole number of screen pixels per scene pixel.
+2. It mixes the sound to -14 LUFS with peaks at -1 dBFS, 48 kHz stereo AAC at 384 kbps, full level from the first frame.
+3. It joins the loop for as many hours as `hours` says, then 20 seconds fading out, without re-encoding.
+
+`make-video.ipynb` does the same in Google Colab and saves the result to Google Drive; it downloads the kit from this branch,
+so the branch name is written in it. A two-hour file is about 3 to 4.5 GB. `python3 tools/check-video.py <file>` checks a built
+video: the opening, every place the loop comes round, and the loudness.
 
 Kits exist for `toymaker` and `stationmaster`. `shepherd` and `observatory` have scene settings only.

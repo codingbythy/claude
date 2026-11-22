@@ -1,10 +1,12 @@
 // Steps a scene forward offline and saves a frame at each of the given times. For checking that effects sit where they should.
-// Usage: node still.js <page-url> <out-prefix> <seconds>[,<seconds>...]      -> <out-prefix>-<seconds>.jpg (or <out-prefix> itself for one .jpg)
+// Usage: node still.js <page-url> <out-prefix> <seconds>[,<seconds>...] [--size 640x360]
+//   -> <out-prefix>-<seconds>.jpg (or <out-prefix> itself for one .jpg). With --size, frames are PNG at that exact size.
 const { chromium } = require('playwright');
 (async () => {
-  const [url, out, list] = process.argv.slice(2), times = list.split(',').map(Number).sort((a, b) => a - b);
+  const av = process.argv.slice(2), size = av.includes('--size') ? av[av.indexOf('--size') + 1].split('x').map(Number) : null;
+  const [url, out, list] = av.filter((a, i) => !a.startsWith('--') && av[i - 1] !== '--size'), times = list.split(',').map(Number).sort((a, b) => a - b);
   const b = await chromium.launch();
-  const p = await b.newPage({ viewport: { width: 1920, height: 1080 } });
+  const p = await b.newPage({ viewport: size ? { width: size[0], height: size[1] } : { width: 1920, height: 1080 } });
   let errs = 0;
   p.on('pageerror', e => { errs++; console.error('PAGEERR', String(e)); });
   p.on('console', m => { if (m.type() === 'error') { errs++; console.error('CONSOLE', m.text()); } });
@@ -18,8 +20,8 @@ const { chromium } = require('playwright');
   await p.evaluate(() => { window.__render.start(); window.__i = 0; window.__next = 0; });
   for (const T of times) {
     await p.evaluate(T => { const R = window.__render; for (; window.__i <= Math.round(T * 30); window.__i++) { R.t = window.__i / 30; if (R.t >= window.__next) { R.tick(); window.__next += 0.45; } R.frame(); } }, T);
-    const file = times.length === 1 && out.endsWith('.jpg') ? out : `${out}-${T}.jpg`;
-    await p.screenshot({ path: file, type: 'jpeg', quality: 90 }); console.log('saved', file);
+    const file = size ? `${out}-${T}.png` : times.length === 1 && out.endsWith('.jpg') ? out : `${out}-${T}.jpg`;
+    await p.screenshot(size ? { path: file, type: 'png' } : { path: file, type: 'jpeg', quality: 90 }); console.log('saved', file);
   }
   console.log('page errors:', errs);
   await b.close();

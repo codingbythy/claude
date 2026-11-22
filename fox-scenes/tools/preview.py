@@ -7,7 +7,7 @@ Writes fox-scenes/work/<scene>/<scene>-preview.mp4 (or .m4a with --audio-only) a
 
 The sound rules every scene is held to (the report says pass or fail for each):
   - full level from the first second: no fade-in, no silence
-  - overall loudness on target (scene.json mix.target_lufs, -16 LUFS), peaks under -1 dBFS
+  - overall loudness on target (scene.json mix.target_lufs, -14 LUFS), peaks under -1 dBFS
   - still clearly there on a phone speaker: no more than 7 dB lost through a small-speaker filter
 """
 import json, os, re, subprocess, sys
