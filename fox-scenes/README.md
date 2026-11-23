@@ -15,8 +15,9 @@ Two types of video:
 - **lo-fi**: the foxes, with music over the scene's own sounds. The music is made with ACE-Step 1.5 in `make-music.ipynb`
   (see below); without those tracks the build composes simpler music of its own.
 - **ambience**: the scene's own sounds only. No music. A type can have its own picture: the stationmaster ambience shows the
-  waiting room alone, without the foxes, opens with snow blowing clear across the screen, and carries the channel's mark,
-  "Somewhere Sheltered", in the bottom right-hand corner.
+  waiting room alone, without the foxes, and opens with snow blowing clear across the screen. The channel's name is stamped
+  into the scene like a maker's mark on the suitcase, faded and partly see-through (`brand` in scene.json, drawn by
+  `tools/grade.py` on the pixel grid and lit like the leather under it).
 
 Each scene has a home type, the one that suits it best. On thumbnails lo-fi carries a warm badge reading LO-FI and ambience a
 cold one reading NO MUSIC.
@@ -46,7 +47,8 @@ Every scene uses the same page, `scene.html?s=<folder>`. Everything specific to 
   under it the scene's sounds sit; `ambience`: nothing to set).
 - `variants`: a type's own picture, e.g. `"ambience": {"painting": "painting-empty-1280.png", "image": "room-empty.webp",
   "mask": "glass-mask-empty.png", "foxes": false}`. `tools/grade.py <folder> --variant ambience` and `tools/make-mask.py <folder>
-  --variant ambience` make its picture and window mask; `scene.html?s=<folder>&type=ambience` shows it. The stationmaster's
+  --variant ambience` make its picture and window mask (a variant can also bring its own `glass`, `grade`, `brand`, and the
+  `glows`, `flames`, `sparks` and `steam` of a repainted room); `scene.html?s=<folder>&type=ambience` shows it. The stationmaster's
   empty bench was rebuilt from the painting itself by `tools/empty-bench.py` (the plank back, the far post and the tartan
   continued from what was visible), not regenerated.
 - `hours`: the video length. The thumbnail badge, the title and the build all read this number, so they cannot disagree.
@@ -93,7 +95,8 @@ three rules, and the report says pass or fail for each:
 2. Loudness on target (-14 LUFS, the level YouTube plays at) with peaks at or under -1 dBFS.
 3. Still clearly there on a phone speaker: no more than 7 dB lost through a small-speaker filter.
 
-Thumbnails: `node tools/still.js "http://127.0.0.1:8791/scene.html?s=toymaker" frame 36,97 --size 1920x1080`, then
+Thumbnails never cover the scene's hero detail: list it in `thumbnail_keep_clear` (layout pixels) and the name moves to
+the bottom right or top right if it would cover it, or `thumb.js` stops and says so. Thumbnails: `node tools/still.js "http://127.0.0.1:8791/scene.html?s=toymaker" frame 36,97 --size 1920x1080`, then
 `node tools/thumb.js toymaker lofi frame-97.png toymaker/youtube/lofi` (and the same with `ambience` and `frame-36.png`).
 Each call writes three versions for YouTube's "Test & compare" (the whole scene with its name, closer with its name, closer
 with no name), each at 1280×720 with a 320×180 copy for judging it at feed size. They are a little brighter and richer than
@@ -138,8 +141,9 @@ loop's end into its start; the third writes `toymaker/video-kit/` (about 70 MB).
 2. It mixes the sound to -14 LUFS with peaks at -1 dBFS, 48 kHz stereo AAC at 384 kbps, full level from the first frame.
 3. It joins the loop for as many hours as `hours` says, then 20 seconds fading out, without re-encoding. Where a type has an
    opening, the opening replaces the first 12 seconds of the first loop (it is the same picture once the snow has cleared,
-   frame for frame), and the corner mark fades in at 3.5 seconds. The mark is `channel/somewhere-sheltered-mark.png`
-   (`tools/mark.js`), in the banner's typeface and colour.
+   frame for frame). A type whose mix sets `"mark": true` also gets `channel/somewhere-sheltered-mark.png` (`tools/mark.js`)
+   over the bottom right-hand corner, fading in at 3.5 seconds; the stationmaster ambience no longer uses it, its name is in
+   the scene.
 
 `build.py --type lofi` or `--type ambience` chooses the type; with neither, it makes the scene's home type.
 
