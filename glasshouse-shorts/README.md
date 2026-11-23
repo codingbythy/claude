@@ -22,3 +22,7 @@ Part 2 is built by `tools/build-part2.py`: same voice and caption treatment as p
 Your grandmother kept one door locked her whole life. The day you finally got it open, you found nothing but glass, and rain. An old glasshouse. Cold, leaking, long forgotten. You sealed every pane. You saved up for a heater. And slowly, it became the warmest corner of the house. Every evening, you sit here with hot tea and a good book. Then, one autumn afternoon, something scratched at the glass. Two amber eyes. An auburn coat, shivering in the wind. You opened the door. He walked straight past you, and curled up in the armchair. As if he had done it a hundred times before. You cut him a little door of his own. And then, in her desk, you found an old photograph. Your grandmother, in that same armchair, fifty years younger. With a fox asleep in her lap.
 
 Part 3 is built by `tools/build-part3.py`: same voice and captions, a cold grade that warms as the glasshouse is restored, and a sepia fade on the photograph.
+
+## Parts 4–6
+
+Scripts are in `next-parts.md`. Built with `tools/build_part.py <n>` (word timings from `tools/words.py <n>`): same voice, captions and subtle sound effects. Part 4 drifts to sepia over the photograph years, part 5 frosts the glass on its last line, part 6 stays on the frosty garden and cuts to the fox in the armchair on the final line.
