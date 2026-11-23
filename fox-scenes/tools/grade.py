@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Colour-grades a scene's painting: <scene>/painting-1280.png -> <scene>/room.webp (1920x1080).
 
-Usage: grade.py <scene-dir> [--compare out.jpg]
+Usage: grade.py <scene-dir> [--variant ambience] [--compare out.jpg]
 The look is set by the "grade" block of the scene's scene.json (a scene without one is only enlarged). Everything is plain
 arithmetic on the picture, so the same settings always give the same result and nothing is repainted or generated:
 
@@ -25,8 +25,12 @@ from PIL import Image, ImageFilter
 
 d = sys.argv[1]
 C = json.load(open(os.path.join(d, 'scene.json'))); G = C.get('grade', {})
+V = C.get('variants', {}).get(sys.argv[sys.argv.index('--variant') + 1], {}) if '--variant' in sys.argv else {}      # e.g. the picture without the foxes
+if V.get('foxes') is False:
+    C = dict(C, breathe=[])
+C = dict(C, image=V.get('image', C['image']))
 SW, SH = C['size']
-src = Image.open(os.path.join(d, 'painting-1280.png')).convert('RGB')
+src = Image.open(os.path.join(d, V.get('painting', 'painting-1280.png'))).convert('RGB')
 a = np.asarray(src).astype(np.float64) / 255
 H, W = a.shape[:2]
 

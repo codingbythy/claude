@@ -23,15 +23,67 @@
     "bpm": 68,
     "style": "lofi"
    },
+   "tracks": {
+    "bpm": 68,
+    "seconds": 180,
+    "seed": 5200,
+    "keys": [
+     "A minor",
+     "F major",
+     "D minor",
+     "C major",
+     "E minor",
+     "G major",
+     "B flat major",
+     "D major"
+    ],
+    "captions": [
+     "slow lo-fi hip hop instrumental, mellow Rhodes chords, soft brushed drums, deep warm bass, tape hiss, lonely and peaceful, winter night",
+     "lo-fi chillhop instrumental, old upright piano, soft vinyl crackle, slow boom-bap beat, round bass, nostalgic, waiting for a late train",
+     "lo-fi jazzhop instrumental, clean jazz guitar, electric piano pads, sparse drums, upright bass, calm and wistful",
+     "mellow lo-fi beat instrumental, felt piano, soft vibraphone, lazy drums, sub bass, warm and sleepy, study music",
+     "ambient lo-fi instrumental, warm analog synth pads, gentle electric piano, slow soft beat, tape saturation, quiet and steady",
+     "lo-fi hip hop instrumental, far-away mellow saxophone, Rhodes, brushed snare, warm bass, late night, snowed in"
+    ]
+   },
    "ambience_vs_music_db": -5,
    "music_eq": "bass=g=-6:f=200:w=0.7,treble=g=9:f=1100:w=0.6"
   },
-  "ambience": {}
+  "ambience": {
+   "open": 6,
+   "mark": true
+  }
  },
+ "pictures": {
+  "default": {
+   "loop": "loop-360.mp4"
+  },
+  "ambience": {
+   "loop": "loop-ambience-360.mp4",
+   "open": "open-ambience-360.mp4",
+   "open_seconds": 12
+  }
+ },
+ "takes": {
+  "files": [
+   "ambience-1.flac",
+   "ambience-2.flac",
+   "ambience-3.flac",
+   "ambience-4.flac"
+  ],
+  "lead": 4
+ },
+ "mark": "mark.png",
  "files": [
   "loop-360.mp4",
-  "ambience.flac",
+  "loop-ambience-360.mp4",
+  "open-ambience-360.mp4",
+  "ambience-1.flac",
+  "ambience-2.flac",
+  "ambience-3.flac",
+  "ambience-4.flac",
   "build.py",
-  "music-long.py"
+  "music-long.py",
+  "mark.png"
  ]
 }

@@ -4,6 +4,7 @@
 // Without --size the picture is 1920x1080. With --size 640x360 a pixel-grid scene is captured at its own resolution, one
 // screen pixel per scene pixel and without any compression loss, so it can later be scaled up by whole numbers (x3 = 1080p,
 // x4 = 1440p) and stay perfectly sharp. It also renders several times faster.
+// It also writes <out-dir>/events.json: the occasional sounds of this take and when they fall.
 // Both start PRE seconds into the scene, once the snow, steam and wind have settled, so the first frame is already "mid-storm".
 const { chromium } = require('playwright');
 const { spawn } = require('child_process');
@@ -54,6 +55,9 @@ const FPS = 30, PRE = 10, TOTAL = PRE + (+secs), SR = 48000;
     const b64 = await p.evaluate(({ o, CH }) => { const s = window.__pcm.subarray(o, o + CH), u = new Uint8Array(s.buffer, s.byteOffset, s.byteLength); let r = ''; for (let i = 0; i < u.length; i += 32768) r += String.fromCharCode.apply(null, u.subarray(i, i + 32768)); return btoa(r); }, { o, CH });
     fs.writeSync(fd, Buffer.from(b64, 'base64'));
   }
-  fs.closeSync(fd); console.log('done', len / 2 / SR, 's of sound', ((Date.now() - t0) / 1000).toFixed(0) + 's');
+  fs.closeSync(fd);
+  const log = await p.evaluate(() => window.__render.log || []);      // the occasional sounds of this take (gusts hitting the wall, the stove settling), in seconds from the start of the file
+  fs.writeFileSync(out + '/events.json', JSON.stringify(log.map(([k, t]) => [k, +(t - PRE).toFixed(2)]).filter(e => e[1] >= 0)));
+  console.log('done', len / 2 / SR, 's of sound', ((Date.now() - t0) / 1000).toFixed(0) + 's');
   await b.close();
 })();

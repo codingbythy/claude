@@ -15,7 +15,8 @@ const KINDS = { lofi: { kind: 'LO-FI', accent: '#ffcf70' }, ambience: { kind: 'N
   if (!KINDS[type]) throw new Error('type must be lofi or ambience');
   const C = JSON.parse(fs.readFileSync(path.join(__dirname, '..', scene, 'scene.json'), 'utf8')), T = C.thumbnail;
   const base = { bg: 'file://' + path.resolve(frame), ...KINDS[type], badge: `${C.hours} HOUR${C.hours === 1 ? '' : 'S'}`, boost: T.boost || [1.12, 1.12, 1.04] };
-  const versions = { a: { crop: [0, 0, 1920], lines: T.lines }, b: { crop: T.close, lines: T.lines }, c: { crop: T.close, lines: [] } };
+  const close = ((C.variants || {})[type] || {}).thumbnail_close || T.close;      // a type with its own picture (no foxes) frames the closer versions its own way
+  const versions = { a: { crop: [0, 0, 1920], lines: T.lines }, b: { crop: close, lines: T.lines }, c: { crop: close, lines: [] } };
   fs.mkdirSync(outDir, { recursive: true });
   const b = await chromium.launch();
   for (const [v, cfg] of Object.entries(versions)) {

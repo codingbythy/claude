@@ -23,10 +23,38 @@
     "bpm": 72,
     "style": "lofi"
    },
+   "tracks": {
+    "bpm": 72,
+    "seconds": 180,
+    "seed": 3100,
+    "keys": [
+     "A minor",
+     "F major",
+     "D minor",
+     "C major",
+     "E minor",
+     "G major",
+     "B flat major",
+     "D major"
+    ],
+    "captions": [
+     "cozy lo-fi hip hop instrumental, warm felt piano, soft music box melody, mellow boom-bap drums, round bass, vinyl crackle, gentle and nostalgic, winter evening",
+     "lo-fi chillhop instrumental, dusty Rhodes electric piano chords, celesta, brushed drums, warm sub bass, tape hiss, sleepy and warm",
+     "lo-fi jazzhop instrumental, nylon guitar, soft glockenspiel, gentle kick and rimshot, upright bass, cosy christmas evening, relaxed",
+     "mellow lo-fi beat instrumental, upright piano with tape wobble, soft vibraphone, lazy swung drums, deep bass, calm study music",
+     "lo-fi instrumental, toy piano and kalimba melody, warm pad, laid-back drums, vinyl noise, tender and playful",
+     "lo-fi hip hop instrumental, jazzy seventh chords on electric piano, far-away muted trumpet, soft drums, warm bass, late night, snow falling outside"
+    ]
+   },
    "ambience_vs_music_db": -7,
    "music_eq": "bass=g=-6:f=200:w=0.7,treble=g=9:f=1100:w=0.6"
   },
   "ambience": {}
+ },
+ "pictures": {
+  "default": {
+   "loop": "loop-360.mp4"
+  }
  },
  "files": [
   "loop-360.mp4",

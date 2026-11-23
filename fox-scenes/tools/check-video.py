@@ -2,6 +2,7 @@
 """Checks a built fox-scene video: the opening, the joins between parts, and the sound level. Prints pass or FAIL per line.
 
 Usage: check-video.py <video.mp4> [--loop 180] [--open 0]
+  --open N  the video starts with an opening part N seconds long (the snow blowing clear) that is cut onto the first loop
   opening   the first frame is a full picture (not black) and the first second of sound is at full level
   joins     at each place two parts meet (each time the loop comes round) the picture changes no more
             than it does between ordinary frames, and the sound has no click and no jump in level beyond what the music's
@@ -13,7 +14,7 @@ import numpy as np
 
 path = sys.argv[1]
 LOOP = int(sys.argv[sys.argv.index('--loop') + 1]) if '--loop' in sys.argv else 180
-OPEN = int(sys.argv[sys.argv.index('--open') + 1]) if '--open' in sys.argv else 0      # seconds of a separate opening clip, if the video has one
+OPEN = int(sys.argv[sys.argv.index('--open') + 1]) if '--open' in sys.argv else 0      # seconds of the opening part, if the video has one
 SR = 48000; W, H = 480, 270
 dur = float(subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', path], capture_output=True, text=True).stdout)
 ok = lambda c: 'pass' if c else 'FAIL'
@@ -40,7 +41,7 @@ print(f'  opening: first frame brightness {first:.0f} (20 s in: {later:.0f}) {ok
 
 joins = [(k * LOOP, f'loop comes round ({k})') for k in range(1, int((dur - 1) // LOOP) + 1) if k * LOOP < dur - 1][:3]
 if OPEN:
-    joins = [(OPEN, 'opening -> loop')] + joins + [(joins[0][0] + OPEN, 'loop start -> rest of loop')]
+    joins = [(OPEN, 'opening -> rest of the first loop')] + joins
 ref = []
 for t in (40, 76, 110, 150):                        # each window straddles a keyframe, as every join does, so like is compared with like
     if t + 1 < dur:

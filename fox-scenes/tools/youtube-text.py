@@ -3,8 +3,8 @@
 type the scene is made in, at <scene>/youtube/<type>/description.txt (type is lofi or ambience).
 
 Usage: youtube-text.py <scene> [<scene> ...]
-The wording comes from the "youtube" block of the scene's scene.json: "story" (the place, shared by both types) and one block
-per type. The number of hours comes from "hours", the same value the thumbnail badge and the long-video build use, so the title
+The wording comes from the "youtube" block of the scene's scene.json: "story" (the place, shared by both types unless a type
+has a "story" of its own, as ambience does where its picture has no foxes) and one block per type. The number of hours comes from "hours", the same value the thumbnail badge and the long-video build use, so the title
 can never promise a length the video does not have.
 The description opens with one plain sentence saying what the video is (YouTube shows the first line in search results and
 under the title), then the story, the sounds and the playlist link.
@@ -32,7 +32,7 @@ for scene in sys.argv[1:]:
             sys.exit(f'{scene} {kind}: tags are {len(tags)} characters; YouTube allows 500')
         text = '\n'.join([
             'TITLE', title, '',
-            'DESCRIPTION', T['lead'].replace('{hours}', hours.lower()), '', *Y['story'], '',
+            'DESCRIPTION', T['lead'].replace('{hours}', hours.lower()), '', *T.get('story', Y['story']), '',
             f'What you will hear, for {hours.lower()}:', *('• ' + s for s in T['sounds']), '',
             T['good_for'], '',
             f'More places to shelter: {PLAYLIST}', '',

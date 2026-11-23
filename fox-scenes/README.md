@@ -10,13 +10,16 @@ live videos or their folders.
 | `shepherd/` | Winter Wind at the Shepherd's Hut | ambience | not yet |
 | `observatory/` | Starry Night at the Stargazer's Observatory | lo-fi; settings only (the style-reference painting) | not yet |
 
-Two types of video, both with the foxes:
+Two types of video:
 
-- **lo-fi**: music composed for the whole length, with the scene's own sounds a set distance underneath it.
-- **ambience**: the scene's own sounds only. No music.
+- **lo-fi**: the foxes, with music over the scene's own sounds. The music is made with ACE-Step 1.5 in `make-music.ipynb`
+  (see below); without those tracks the build composes simpler music of its own.
+- **ambience**: the scene's own sounds only. No music. A type can have its own picture: the stationmaster ambience shows the
+  waiting room alone, without the foxes, opens with snow blowing clear across the screen, and carries the channel's mark,
+  "Somewhere Sheltered", in the bottom right-hand corner.
 
-A scene's picture and weather loop are the same for both; only the mix differs. Each scene has a home type, the one that suits
-it best. On thumbnails lo-fi carries a warm badge reading LO-FI and ambience a cold one reading NO MUSIC.
+Each scene has a home type, the one that suits it best. On thumbnails lo-fi carries a warm badge reading LO-FI and ambience a
+cold one reading NO MUSIC.
 
 ## Where the paintings come from
 
@@ -41,6 +44,11 @@ Every scene uses the same page, `scene.html?s=<folder>`. Everything specific to 
 - `sound`: the wind, fire, clock and other sounds, all generated (nothing recorded or licensed).
 - `mix`: the loudness target, the scene's home type, and the settings for each type it is made in (`lofi`: the music and how far
   under it the scene's sounds sit; `ambience`: nothing to set).
+- `variants`: a type's own picture, e.g. `"ambience": {"painting": "painting-empty-1280.png", "image": "room-empty.webp",
+  "mask": "glass-mask-empty.png", "foxes": false}`. `tools/grade.py <folder> --variant ambience` and `tools/make-mask.py <folder>
+  --variant ambience` make its picture and window mask; `scene.html?s=<folder>&type=ambience` shows it. The stationmaster's
+  empty bench was rebuilt from the painting itself by `tools/empty-bench.py` (the plank back, the far post and the tartan
+  continued from what was visible), not regenerated.
 - `hours`: the video length. The thumbnail badge, the title and the build all read this number, so they cannot disagree.
 - `thumbnail`: the two lines of the scene name, the closer framing, and which moment of the loop each type's thumbnail shows.
 - `youtube`: the wording for titles and descriptions: the story of the place, then a block per type.
@@ -51,8 +59,18 @@ Every scene uses the same page, `scene.html?s=<folder>`. Everything specific to 
   second of the loop, so there is life on screen straight away, then every 10 to 40 seconds. Nothing else about them moves.
 - **The weather.** Each three-minute loop starts with heavy snow, eases to a calm stretch in the middle and picks up again.
   The wind sound gets louder and higher exactly when the snow gets heavier, and the snow ticking on the glass follows too.
-- **The fire.** It flares up and dies back. When it flares it crackles more, glows brighter and throws more sparks, and each
-  loud pop in the sound throws a burst of sparks in the picture.
+- **The fire.** It flares up and dies back. When it flares it crackles more, glows brighter and throws more sparks. The loud
+  pops fall at fixed moments of the loop, and each one throws a burst of sparks and a flash of firelight in the picture.
+
+### Sound that does not repeat
+
+The weather loop is three minutes, but its sound is made in several **takes** (`scene.html?...&take=<n>`): the same storm,
+so the sound still swells when the snow thickens, with different detail. Each take has its own short gusts on top of the
+storm, slow drifts in level and tone, its own crackle, and its own occasional sounds (`sound.events` in scene.json): a gust
+thumping the wall and rattling the sash, the wind whistling in the window frame, a log shifting in the stove. The build plays
+the takes in a shuffled order, never the same one twice running, blending each into the next, so over two hours no stretch of
+sound comes round the same. `tools/check-takes.py <folder>` measures them: how alike their storm is, how different their
+detail, and how far each occasional sound stands out.
 
 All of this repeats every 180 seconds, so the loop comes round without a jump. The timings live in `scene.html`
 (`storm`, `fireLife` and `FLICKS`).
@@ -82,6 +100,18 @@ with no name), each at 1280×720 with a 320×180 copy for judging it at feed siz
 the video, on purpose. `python3 tools/youtube-text.py toymaker` writes `youtube/<type>/description.txt` for each type: title,
 description, tags and pinned comment.
 
+## Making the lo-fi music
+
+`make-music.ipynb` runs ACE-Step 1.5 on Colab's free T4 GPU and saves the tracks into Google Drive (My Drive / Cozy Scenes /
+music / <scene>), three minutes each, at the scene's tempo, with the instruments and mood written in the scene's
+`mix.lofi.tracks`. 42 tracks fill a two-hour video with no track heard twice. It can be stopped and started again: it only
+makes the tracks still missing. ACE-Step's code and weights are MIT-licensed, and its model card states the music may be used
+commercially. When uploading, answer Yes to YouTube's question about altered or synthetic content: YouTube lists AI-generated
+music as something to disclose, and says disclosure does not limit reach or monetisation.
+
+`make-video.ipynb` then uses those tracks for lo-fi (`build.py --music-dir <folder>`: levelled, trimmed of silence, three-second
+blends, reshuffled each time round).
+
 ## Making the loop and the two-hour video
 
 ```bash
@@ -97,18 +127,25 @@ python3 fox-scenes/tools/make-kit.py toymaker
 ```
 
 The first command renders the loop at the scene's own size, every pixel exact (about 8 minutes); the second blends the
-loop's end into its start; the third writes `toymaker/video-kit/` (about 70 MB). The kit's `build.py` then makes the upload:
+loop's end into its start; the third writes `toymaker/video-kit/` (about 70 MB). `make-kit.py` also packs, when they exist in
+`work/<scene>/`: a type's own loop (`loop-<type>/`, rendered from `scene.html?s=<scene>&type=<type>`), its opening
+(`open-<type>/`, 16 s rendered with `&type=<type>&open=6`), and the sound takes (`takes/<n>/`, 184 s each with
+`--audio-only` and `&take=<n>`). The stationmaster kit has four takes and comes to about 190 MB. The kit's `build.py` then makes the upload:
 
 1. It enlarges the loop four times over to 2560×1440 with hard pixel edges, so it stays perfectly sharp, and encodes it once
    (H.264 High, 30 fps, BT.709, tagged). YouTube gives uploads above 1080p a higher-quality stream, and each of its smaller
    sizes (1080p, 720p) is a whole number of screen pixels per scene pixel.
 2. It mixes the sound to -14 LUFS with peaks at -1 dBFS, 48 kHz stereo AAC at 384 kbps, full level from the first frame.
-3. It joins the loop for as many hours as `hours` says, then 20 seconds fading out, without re-encoding.
+3. It joins the loop for as many hours as `hours` says, then 20 seconds fading out, without re-encoding. Where a type has an
+   opening, the opening replaces the first 12 seconds of the first loop (it is the same picture once the snow has cleared,
+   frame for frame), and the corner mark fades in at 3.5 seconds. The mark is `channel/somewhere-sheltered-mark.png`
+   (`tools/mark.js`), in the banner's typeface and colour.
 
 `build.py --type lofi` or `--type ambience` chooses the type; with neither, it makes the scene's home type.
 
 `make-video.ipynb` does the same in Google Colab (set `SCENE` and `TYPE`) and saves the result to Google Drive; it downloads the kit from this branch,
 so the branch name is written in it. A two-hour file is about 3 to 4.5 GB. `python3 tools/check-video.py <file>` checks a built
-video: the opening, every place the loop comes round, and the loudness.
+video: the opening, every place the loop comes round, and the loudness (`--open 12` for a video with an opening).
 
-Kits exist for `toymaker` and `stationmaster`. `shepherd` and `observatory` have scene settings only.
+Kits exist for `toymaker` and `stationmaster`. The toymaker kit still has a single sound loop; give it takes as above to make
+its sound vary too. `shepherd` and `observatory` have scene settings only.

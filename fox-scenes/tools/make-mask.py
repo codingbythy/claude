@@ -6,7 +6,9 @@ Reads <scene>/scene.json -> "glass": {"rects": [...], "exclude": [...], "exclude
 rect, looks like the window frame (brown and dark), or lies in a "fur" rect and is any warm colour (a fox in front of the window). Writes <scene>/glass-mask.png on the half-size effects grid, and with
 --debug <file> a picture of the painting with the mask tinted so it can be checked by eye.
 
-Usage: make-mask.py <scene-dir> [--debug out.jpg]
+Usage: make-mask.py <scene-dir> [--variant ambience] [--debug out.jpg]
+With --variant the mask is made for that entry of the scene's "variants" (its own painting and mask file; without foxes there is
+no fur to keep clear).
 """
 import json, sys, os
 import numpy as np
@@ -14,8 +16,10 @@ from PIL import Image, ImageDraw
 
 d = sys.argv[1]
 C = json.load(open(os.path.join(d, 'scene.json')))
-SW, SH = C['size']; G = C['glass']
-src = os.path.join(d, 'painting-1280.png')          # judge colours on the painting as made, not on the graded copy
+V = C.get('variants', {}).get(sys.argv[sys.argv.index('--variant') + 1], {}) if '--variant' in sys.argv else {}
+SW, SH = C['size']; G = dict(C['glass'], **({'fur': []} if V.get('foxes') is False else {})); C = dict(C, mask=V.get('mask', C['mask']))
+G['exclude_polys'] = G.get('exclude_polys', []) + V.get('glass_exclude_polys', [])      # e.g. the bench back a fox used to hide
+src = os.path.join(d, V.get('painting', 'painting-1280.png'))          # judge colours on the painting as made, not on the graded copy
 im = Image.open(src if os.path.exists(src) else os.path.join(d, C['image'])).convert('RGB').resize((SW, SH), Image.LANCZOS)
 a = np.asarray(im).astype(np.int32); r, g, b = a[..., 0], a[..., 1], a[..., 2]
 lum = (299 * r + 587 * g + 114 * b) // 1000
