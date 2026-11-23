@@ -114,7 +114,7 @@ else:
     GRADE = f"if(lt(T,{a - 0.5:.2f}),0.8,max(0,0.8-(T-{a - 0.5:.2f})/1.6))"
     ALT = "colorchannelmixer=.6:.2:.3:0:.2:.65:.3:0:.25:.3:.9:0,eq=brightness=0.06:saturation=0.45"
     T_DIM = VO_END + 0.4
-    x0, x1, ss, ms = 160, 1250, 140, 30
+    x0, x1, ss, ms = 160, 1250, 20, 30
 T_CUT = wt("someone") - 0.15 if P == 6 else None
 if T_CUT:
     pan = f"if(lt(t,{T_CUT:.2f}),{x0}+({x1}-{x0})*(1-cos(PI*min(t/{T_CUT:.2f},1)))/2,2150)"
