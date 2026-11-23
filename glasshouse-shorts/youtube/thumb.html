@@ -2,7 +2,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
 <style>
 html,body{margin:0;width:1080px;height:1920px;overflow:hidden;background:#0a0d14}
-.bg{position:absolute;inset:0;background:url(bg.png) no-repeat;background-size:3413.3px 1920px;background-position:-2262px 0;image-rendering:pixelated}
+.bg{position:absolute;inset:0;background:url(bg.png) no-repeat;background-size:3413.3px 1920px;background-position:var(--x,-2262px) 0;filter:var(--f,none);image-rendering:pixelated}
 .night{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,9,28,.78) 0%,rgba(6,9,28,.62) 38%,rgba(6,9,28,.12) 58%,rgba(6,9,28,0) 70%,rgba(6,9,28,.55) 100%)}
 .glow{position:absolute;inset:0;background:radial-gradient(ellipse 520px 430px at 560px 1270px,rgba(255,176,84,.20),rgba(255,176,84,0) 70%)}
 .badge{position:absolute;top:300px;left:70px;font:44px/1 "Press Start 2P",monospace;color:#1c1008;background:#f4bd4f;padding:18px 24px 14px;box-shadow:0 8px 0 rgba(0,0,0,.55)}
@@ -11,7 +11,13 @@ html,body{margin:0;width:1080px;height:1920px;overflow:hidden;background:#0a0d14
 .sub{position:absolute;top:850px;left:70px;font:31px/1.5 "Press Start 2P",monospace;word-spacing:-14px;color:#fff6dc;background:rgba(18,10,6,.9);border:5px solid #f4bd4f;padding:20px 24px 14px;box-shadow:0 9px 0 rgba(0,0,0,.6)}
 </style></head><body>
 <div class="bg"></div><div class="night"></div><div class="glow"></div>
-<div class="badge">PART 1</div>
-<div class="big">WHERE DID<br>HE <b>COME</b><br><b>FROM?</b></div>
-<div class="sub">you never brought him home.</div>
-</body></html>
+<div class="badge" id="badge">PART 1</div>
+<div class="big" id="big">WHERE DID<br>HE <b>COME</b><br><b>FROM?</b></div>
+<div class="sub" id="sub">you never brought him home.</div>
+<script>
+// Optional config in the hash: {badge, big (HTML), sub, x (background x offset), f (CSS filter), glow (0/1)}
+if (location.hash.length > 1) { const C = JSON.parse(decodeURIComponent(location.hash.slice(1)));
+  for (const k of ['badge', 'big', 'sub']) if (C[k]) document.getElementById(k).innerHTML = C[k];
+  if (C.x) document.documentElement.style.setProperty('--x', C.x); if (C.f) document.documentElement.style.setProperty('--f', C.f);
+  if (C.glow === 0) document.querySelector('.glow').style.display = 'none'; }
+</script></body></html>
