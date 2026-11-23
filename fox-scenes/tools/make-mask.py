@@ -17,7 +17,7 @@ from PIL import Image, ImageDraw
 d = sys.argv[1]
 C = json.load(open(os.path.join(d, 'scene.json')))
 V = C.get('variants', {}).get(sys.argv[sys.argv.index('--variant') + 1], {}) if '--variant' in sys.argv else {}
-SW, SH = C['size']; G = dict(C['glass'], **({'fur': []} if V.get('foxes') is False else {})); C = dict(C, mask=V.get('mask', C['mask']))
+SW, SH = C['size']; G = dict(V.get('glass', C['glass']), **({'fur': []} if V.get('foxes') is False else {})); C = dict(C, mask=V.get('mask', C['mask']))
 G['exclude_polys'] = G.get('exclude_polys', []) + V.get('glass_exclude_polys', [])      # e.g. the bench back a fox used to hide
 src = os.path.join(d, V.get('painting', 'painting-1280.png'))          # judge colours on the painting as made, not on the graded copy
 im = Image.open(src if os.path.exists(src) else os.path.join(d, C['image'])).convert('RGB').resize((SW, SH), Image.LANCZOS)

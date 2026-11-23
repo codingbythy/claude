@@ -15,12 +15,16 @@ html, body { margin: 0; width: 1280px; height: 720px; overflow: hidden; backgrou
 #title { position: absolute; left: 40px; bottom: 28px; font: 110px/1.05 "Anton", sans-serif; letter-spacing: .01em; color: #fff7e6; text-transform: uppercase;
   text-shadow: 0 0 18px rgba(0, 0, 0, .9), 0 6px 0 rgba(0, 0, 0, .75); -webkit-text-stroke: 3px rgba(10, 6, 4, .9); paint-order: stroke fill; white-space: nowrap; }
 #title span { display: block; }
+#title.br { left: auto; right: 40px; text-align: right; }
+#title.tr { left: auto; right: 40px; bottom: auto; top: 30px; text-align: right; }
 </style></head><body>
 <div id="bg"></div><div id="shade"></div>
 <div id="tags"><div id="badge"></div><div id="kind"></div></div>
 <div id="title"><span id="l1"></span><span id="l2"></span></div>
 <script>
-// Config in the hash: { bg, crop: [x, y, w] in the 1920x1080 frame, lines: [first, second] or [], accent, badge, kind, boost: [brightness, saturation, contrast] }
+// Config in the hash: { bg, crop: [x, y, w] in the 1920x1080 frame, lines: [first, second] or [], accent, badge, kind, boost: [brightness, saturation, contrast],
+//   keep: [[x0, y0, x1, y1], ...] in the 1920x1080 frame: things the words must never cover (the hot chocolate). The name goes
+//   bottom-left if that leaves them clear, else bottom-right, else top-right; if nothing works the page says so. }
 const C = JSON.parse(decodeURIComponent(location.hash.slice(1)));
 const [cx, cy, cw] = C.crop || [0, 0, 1920], s = 1280 / cw, bg = document.getElementById('bg');
 bg.style.backgroundImage = `url(${C.bg})`; bg.style.backgroundSize = `${1920 * s}px ${1080 * s}px`; bg.style.backgroundPosition = `${-cx * s}px ${-cy * s}px`;
@@ -33,5 +37,18 @@ document.getElementById('badge').style.background = C.accent; document.getElemen
 const kind = document.getElementById('kind'); if (C.kind) { kind.textContent = C.kind; kind.style.color = C.accent; kind.style.borderColor = C.accent; } else kind.remove();
 // keep the name inside the left 58% of the frame, whatever its length
 const t = document.getElementById('title'), max = 1280 * 0.58;
-document.fonts.ready.then(() => { if (t) { const w = t.getBoundingClientRect().width; if (w > max) t.style.fontSize = Math.floor(110 * max / w) + 'px'; } document.body.dataset.ready = '1'; });
+const keep = (C.keep || []).map(([x0, y0, x1, y1]) => [(x0 - cx) * s, (y0 - cy) * s, (x1 - cx) * s, (y1 - cy) * s]);
+const hits = el => { const r = el.getBoundingClientRect(); return keep.some(([x0, y0, x1, y1]) => r.left < x1 && r.right > x0 && r.top < y1 && r.bottom > y0); };
+const SHADE = { bl: '120px 720px', br: '1160px 720px', tr: '1160px 0px' };
+document.fonts.ready.then(() => {
+  if (document.getElementById('title')) {
+    const w = t.getBoundingClientRect().width; if (w > max) t.style.fontSize = Math.floor(110 * max / w) + 'px';
+    const where = ['bl', 'br', 'tr'].find(p => { t.className = p; return !hits(t); });
+    if (!where) document.body.dataset.blocked = 'the name';
+    else { t.className = where; document.body.dataset.where = where;
+      document.getElementById('shade').style.background = `radial-gradient(ellipse 900px 430px at ${SHADE[where]}, rgba(6, 5, 8, .93) 0%, rgba(6, 5, 8, .72) 45%, rgba(6, 5, 8, 0) 100%)`; }
+  }
+  if (hits(document.getElementById('tags'))) document.body.dataset.blocked = 'the badges';
+  document.body.dataset.ready = '1';
+});
 </script></body></html>

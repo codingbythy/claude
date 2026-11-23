@@ -1,0 +1,21 @@
+Attach: fox-scenes/stationmaster/painting-empty-1280.png (the empty waiting room as it is now).
+
+Repaint the attached picture: the small waiting room of a remote mountain railway halt at night, in a blizzard. Keep its detailed pixel-art style exactly: crisp visible pixels, dithered shading, soft outlines, the same level of detail, warm lamplight and stove glow set against a deep blue blizzard night. Keep the same room and everything in it except the changes below: the black pot-bellied stove on the right glowing orange through its grate, with the blue enamel kettle on top and the stovepipe rising up the wall; the pendulum wall clock; the small arched ticket window with its brass grille; the stationmaster's cap and the brass signal lantern hanging on pegs; the oil lantern glowing on the wall; the panelled wooden walls and worn floorboards; and, outside, the snowed-in platform with its amber platform lamp, the signal post with a small red lamp, the fence, the buried rails, the pine forest and the mountains.
+
+Changes:
+
+1. A much bigger window. The window on the left now fills the left 60 percent of the picture, from just below the ceiling down to a low sill at about two-thirds of the picture's height, divided into tall panes by thin wooden glazing bars. Far more of the storm-swept platform, the forest and the mountains is visible. Snow is heaped on the outside sill and frost creeps into the lower corners of the panes.
+
+2. One armchair instead of the long bench. In place of the bench there is a single deep, soft wingback armchair for one person, in the right half of the picture between the middle and the stove, turned a little towards the window as if to watch the storm. It is piled with cushions (a plump green tartan cushion and a cream cable-knit cushion), a chunky cream knitted blanket is thrown over one arm and the green tartan blanket spills over the seat. A low footstool with a folded blanket stands in front of it. It should look like the most comfortable seat in the world.
+
+3. Hot chocolate as the hero detail. At the armchair's left elbow, in the lower middle of the picture and just right of the centre line, stands a small round wooden side table with one large mug of hot chocolate, lit warmly by the stove: rich dark chocolate filling the mug almost to the brim, topped with a swirl of whipped cream and a few marshmallows, a cinnamon stick resting on the saucer, and a small plate of biscuits beside it. Make the mug big and bright enough to read instantly even when the picture is small.
+
+4. The suitcase. Keep the large brown leather suitcase standing in the bottom-right corner, with a broad, plain front panel facing us.
+
+5. Keep the bottom-left corner calm, just floorboards and the edge of a rug, and keep the top-left corner as dark stormy sky seen through the window. Nothing important in either corner.
+
+The room is empty and waiting: no people and no animals.
+
+Important, because the falling snow and the steam will be animated separately: do not draw any falling snowflakes or streaks in the air, and no steam or smoke from the mug, the kettle or the stove. Show snow only where it has settled. Do draw the stove glow and the lamplight.
+
+No text, letters, numbers or signs anywhere, including on the suitcase and the clock face. No border, no watermark. Wide 16:9 landscape.

@@ -18,14 +18,19 @@ arithmetic on the picture, so the same settings always give the same result and 
   bloom        lamps, flames and lit windows glow softly into their surroundings
   vignette     darkening toward the corners; lift puts a small floor under the darkest tones
   pixel        snap the picture to a true pixel grid of this many screen pixels, with "colours" in the palette (0 = off)
+  brand        the channel's name stamped into the scene, on the pixel grid, like a maker's mark on a suitcase:
+               {"x", "y" (centre, layout pixels), "alpha", "color", "roof": true for the little roof above the name}.
+               It takes the light of whatever it is stamped on, so it sits in the picture rather than on top of it.
+A variant ("variants" in scene.json, chosen with --variant) can bring its own painting, image, mask, grade and brand.
 """
 import json, os, sys
 import numpy as np
 from PIL import Image, ImageFilter
 
 d = sys.argv[1]
-C = json.load(open(os.path.join(d, 'scene.json'))); G = C.get('grade', {})
+C = json.load(open(os.path.join(d, 'scene.json')))
 V = C.get('variants', {}).get(sys.argv[sys.argv.index('--variant') + 1], {}) if '--variant' in sys.argv else {}      # e.g. the picture without the foxes
+G = V.get('grade', C.get('grade', {})); B = V.get('brand', C.get('brand'))
 if V.get('foxes') is False:
     C = dict(C, breathe=[])
 C = dict(C, image=V.get('image', C['image']))
@@ -48,6 +53,40 @@ def to_rgb(h, s, v):
 
 def soft(mask, radius):
     return np.asarray(Image.fromarray((np.clip(mask, 0, 1) * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(radius))).astype(np.float64) / 255
+
+
+# a small capital alphabet, five pixels wide and seven high, for the name stamped into the scene
+FONT = {'S': '.###.|#...#|#....|.###.|....#|#...#|.###.', 'O': '.###.|#...#|#...#|#...#|#...#|#...#|.###.', 'M': '#...#|##.##|#.#.#|#.#.#|#...#|#...#|#...#',
+        'E': '#####|#....|#....|####.|#....|#....|#####', 'W': '#...#|#...#|#...#|#.#.#|#.#.#|##.##|#...#', 'H': '#...#|#...#|#...#|#####|#...#|#...#|#...#',
+        'R': '####.|#...#|#...#|####.|#.#..|#..#.|#...#', 'L': '#....|#....|#....|#....|#....|#....|#####', 'T': '#####|..#..|..#..|..#..|..#..|..#..|..#..',
+        'D': '####.|#...#|#...#|#...#|#...#|#...#|####.'}
+ROOF = '....#....|...#.#...|..#...#..|.#.....#.'
+
+
+def stamp(img, b, k):
+    """The channel's name stamped into the picture like a maker's mark: faded gold, partly see-through, with a hairline of
+    shadow where it is pressed into the surface, lit by the same light as the surface under it."""
+    rows = ([ROOF, ''] if b.get('roof', True) else []) + [w for word in b.get('text', ['SOMEWHERE', 'SHELTERED']) for w in ('|'.join(
+        ''.join(FONT[c].split('|')[r] + '.' for c in word)[:-1] for r in range(7)), '')][:-1]
+    lines = [r for block in rows for r in (block.split('|') if block else ['.'])]
+    wid = max(len(r) for r in lines); hgt = len(lines)
+    ink = np.zeros((hgt, wid), bool)
+    for j, r in enumerate(lines):
+        off = (wid - len(r)) // 2
+        for i, c in enumerate(r):
+            ink[j, off + i] = c == '#'
+    a = np.asarray(img).astype(np.float64); x0 = round(b['x'] * k - wid / 2); y0 = round(b['y'] * k - hgt / 2)
+    under = a[y0:y0 + hgt, x0:x0 + wid]; lum = under @ np.array([0.299, 0.587, 0.114])
+    light = np.clip(lum / max(lum.mean(), 1), 0.6, 1.35)[..., None]
+    rng = np.random.default_rng(7); alpha = b.get('alpha', 0.5) * rng.uniform(0.75, 1.1, ink.shape)        # worn in places
+    gold = np.array(b.get('color', [226, 186, 112])) * light
+    shade = np.zeros_like(ink); shade[1:, 1:] = ink[:-1, :-1]; shade &= ~ink                                    # pressed into the surface
+    out = under.copy()
+    out[shade] *= 1 - 0.45 * b.get('alpha', 0.5)
+    out[ink] = under[ink] * (1 - alpha[ink, None]) + gold[ink] * alpha[ink, None]
+    a[y0:y0 + hgt, x0:x0 + wid] = out
+    print(f'  brand stamped at {x0},{y0} on the {img.width}x{img.height} grid, {wid}x{hgt} pixels')
+    return Image.fromarray(np.clip(a + 0.5, 0, 255).astype(np.uint8))
 
 
 yy, xx = np.mgrid[0:H, 0:W].astype(np.float64)
@@ -117,6 +156,8 @@ px = G.get('pixel', 0)
 if px:      # a true pixel grid and a limited palette: every "pixel" the same size, colours chosen from one set
     small = out.resize((1920 // px, 1080 // px), Image.BOX)
     small = small.quantize(G.get('colours', 64), method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE, kmeans=3).convert('RGB')
+    if B:
+        small = stamp(small, B, small.width / SW)
     small.save(os.path.join(d, C['image']), lossless=True)            # stored at grid size; the scene page scales it up crisply
     big = small.resize((1920, 1080), Image.NEAREST)
 else:
