@@ -4,7 +4,8 @@
 Usage: check-video.py <video.mp4> [--loop 180] [--open 0]
   opening   the first frame is a full picture (not black) and the first second of sound is at full level
   joins     at each place two parts meet (each time the loop comes round) the picture changes no more
-            than it does between ordinary frames, and the sound has no click or jump in level
+            than it does between ordinary frames, and the sound has no click and no jump in level beyond what the music's
+            beat or the storm's gusts do at any ordinary moment
   loudness  overall level and peak
 """
 import re, subprocess, sys
@@ -45,6 +46,9 @@ for t in (40, 76, 110, 150):                        # each window straddles a ke
     if t + 1 < dur:
         f = frames(t - 2 / 30, 5); ref += [psnr(f[i], f[i + 1]) for i in range(4)]
 floor = min(ref)                                    # the largest ordinary frame-to-frame change (lowest PSNR) seen away from any join
+y = audio(20, min(120, dur - 25)); half = SR // 2
+lv = np.array([db(np.mean(y[i:i + half] ** 2)) for i in range(0, len(y) - half, half)])
+usual = float(np.abs(np.diff(lv)).max())          # the biggest change between neighbouring half seconds anywhere in two ordinary minutes
 for t, label in joins:
     f = frames(t - 2 / 30, 4); p = min(psnr(f[i], f[i + 1]) for i in range(3))
     line = f'  join at {t:6.1f} s ({label}): picture {p:.1f} dB vs ordinary frames {floor:.1f}-{max(ref):.1f} {ok(p > floor - 2.5)}'
@@ -52,7 +56,7 @@ for t, label in joins:
         x = audio(t - 1.5, 3); j = int(1.5 * SR); d = np.abs(np.diff(x))
         step = d[j - 300:j + 300].max(); typical = np.percentile(d, 99.9)
         jump = db(np.mean(x[j:j + SR // 2] ** 2)) - db(np.mean(x[j - SR // 2:j] ** 2))
-        line += f' | sound step {step / typical:.1f}x typical {ok(step < 4 * typical)}, level change {jump:+.1f} dB {ok(abs(jump) < 2.5)}'
+        line += f' | sound step {step / typical:.1f}x typical {ok(step < 4 * typical)}, level change {jump:+.1f} dB (ordinary moments change by up to {usual:.1f}) {ok(abs(jump) <= max(2.5, usual))}'
     print(line)
 
 log = subprocess.run(['ffmpeg', '-hide_banner', '-nostats', '-i', path, '-af', 'ebur128=peak=true', '-f', 'null', '-'], capture_output=True, text=True).stderr

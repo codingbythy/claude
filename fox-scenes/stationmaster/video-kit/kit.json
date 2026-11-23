@@ -1,6 +1,6 @@
 {
  "title": "Blizzard at the Stationmaster's Waiting Room",
- "file_name": "blizzard-at-the-stationmasters-waiting-room-2h",
+ "slug": "blizzard-at-the-stationmasters-waiting-room",
  "hours": 2,
  "loop_seconds": 180,
  "outro_seconds": 20,
@@ -13,13 +13,25 @@
   "audio_bitrate": "384k"
  },
  "ambience_lufs": -20,
- "mix": {
-  "mode": "ambient",
-  "target_lufs": -14
+ "target_lufs": -14,
+ "home": "ambience",
+ "mixes": {
+  "lofi": {
+   "music": {
+    "seed": 52,
+    "transpose": -3,
+    "bpm": 68,
+    "style": "lofi"
+   },
+   "ambience_vs_music_db": -5,
+   "music_eq": "bass=g=-6:f=200:w=0.7,treble=g=9:f=1100:w=0.6"
+  },
+  "ambience": {}
  },
  "files": [
   "loop-360.mp4",
   "ambience.flac",
-  "build.py"
+  "build.py",
+  "music-long.py"
  ]
 }

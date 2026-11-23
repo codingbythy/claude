@@ -1,22 +1,26 @@
 <!doctype html>
 <html><head><meta charset="utf-8">
 <style>
-/* Thumbnail for a fox scene: a frame of the scene, the duration badge fixed top-left, the scene name fixed bottom-left (or no
-   name at all). The foxes and the window stay clear; YouTube's own time stamp sits bottom-right. */
+/* Thumbnail for a fox scene: a frame of the scene; top-left, the duration badge and beside it what kind of video it is
+   (LO-FI or NO MUSIC); bottom-left, the scene name (or no name at all). The foxes and the window stay clear; YouTube's own
+   time stamp sits bottom-right. Lo-fi videos use the warm accent colour and ambience videos the cold one, across the channel. */
 @font-face { font-family: "Anton"; src: url(fonts/Anton-Regular.woff2) format("woff2"); }
 html, body { margin: 0; width: 1280px; height: 720px; overflow: hidden; background: #07090d; }
 #bg { position: absolute; inset: 0; background-repeat: no-repeat; image-rendering: pixelated; }
 #shade { position: absolute; inset: 0; background: radial-gradient(ellipse 900px 430px at 120px 720px, rgba(6, 5, 8, .93) 0%, rgba(6, 5, 8, .72) 45%, rgba(6, 5, 8, 0) 100%); }
-#badge { position: absolute; left: 36px; top: 30px; font: 62px/1 "Anton", sans-serif; letter-spacing: .03em; color: #17100a; padding: 12px 22px 10px; border-radius: 10px; box-shadow: 0 6px 0 rgba(0, 0, 0, .5); }
+#tags { position: absolute; left: 36px; top: 30px; display: flex; gap: 14px; font: 62px/1 "Anton", sans-serif; letter-spacing: .03em; }
+#tags > div { padding: 12px 22px 10px; border-radius: 10px; box-shadow: 0 6px 0 rgba(0, 0, 0, .5); }
+#badge { color: #17100a; }
+#kind { background: rgba(14, 10, 8, .88); border: 4px solid; padding: 8px 20px 6px !important; }
 #title { position: absolute; left: 40px; bottom: 28px; font: 110px/1.05 "Anton", sans-serif; letter-spacing: .01em; color: #fff7e6; text-transform: uppercase;
   text-shadow: 0 0 18px rgba(0, 0, 0, .9), 0 6px 0 rgba(0, 0, 0, .75); -webkit-text-stroke: 3px rgba(10, 6, 4, .9); paint-order: stroke fill; white-space: nowrap; }
 #title span { display: block; }
 </style></head><body>
 <div id="bg"></div><div id="shade"></div>
-<div id="badge"></div>
+<div id="tags"><div id="badge"></div><div id="kind"></div></div>
 <div id="title"><span id="l1"></span><span id="l2"></span></div>
 <script>
-// Config in the hash: { bg, crop: [x, y, w] in the 1920x1080 frame, lines: [first, second] or [], accent, badge, boost: [brightness, saturation, contrast] }
+// Config in the hash: { bg, crop: [x, y, w] in the 1920x1080 frame, lines: [first, second] or [], accent, badge, kind, boost: [brightness, saturation, contrast] }
 const C = JSON.parse(decodeURIComponent(location.hash.slice(1)));
 const [cx, cy, cw] = C.crop || [0, 0, 1920], s = 1280 / cw, bg = document.getElementById('bg');
 bg.style.backgroundImage = `url(${C.bg})`; bg.style.backgroundSize = `${1920 * s}px ${1080 * s}px`; bg.style.backgroundPosition = `${-cx * s}px ${-cy * s}px`;
@@ -26,6 +30,7 @@ const lines = C.lines || [];
 if (!lines.length) { document.getElementById('title').remove(); document.getElementById('shade').remove(); }
 else { document.getElementById('l1').textContent = lines[0]; document.getElementById('l2').textContent = lines[1] || ''; document.getElementById('l2').style.color = C.accent; }
 document.getElementById('badge').style.background = C.accent; document.getElementById('badge').textContent = C.badge;
+const kind = document.getElementById('kind'); if (C.kind) { kind.textContent = C.kind; kind.style.color = C.accent; kind.style.borderColor = C.accent; } else kind.remove();
 // keep the name inside the left 58% of the frame, whatever its length
 const t = document.getElementById('title'), max = 1280 * 0.58;
 document.fonts.ready.then(() => { if (t) { const w = t.getBoundingClientRect().width; if (w > max) t.style.fontSize = Math.floor(110 * max / w) + 'px'; } document.body.dataset.ready = '1'; });

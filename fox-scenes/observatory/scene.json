@@ -13,5 +13,5 @@
   "steam": [{"x": 130, "y": 765}, {"x": 245, "y": 772}],
   "breathe": [{"cx": 810, "cy": 470, "rx": 300, "ry": 160, "amt": 0.012, "period": 4.5}, {"cx": 1330, "cy": 500, "rx": 250, "ry": 150, "amt": 0.012, "period": 5, "phase": 1.9}],
   "sound": {"wind": {"level": 0.3, "bed": 0.18, "bedF": 300, "body": 0.9, "bodyF": 420, "howl": 0.3, "howlF": [350, 560], "q": 1.5, "air": 0.01, "lull": 0.5}},
-  "mix": {"mode": "lofi", "music": {"seed": 44, "transpose": 0, "bpm": 70, "style": "lofi"}, "ambience_vs_music_db": -9, "target_lufs": -16, "music_eq": "bass=g=-6:f=200:w=0.7,treble=g=9:f=1100:w=0.6"}
+  "mix": {"target_lufs": -16, "home": "lofi", "lofi": {"music": {"seed": 44, "transpose": 0, "bpm": 70, "style": "lofi"}, "ambience_vs_music_db": -9, "music_eq": "bass=g=-6:f=200:w=0.7,treble=g=9:f=1100:w=0.6"}}
 }

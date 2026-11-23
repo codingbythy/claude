@@ -3,12 +3,20 @@
 The next episodes: two foxes asleep somewhere sheltered, with the weather outside a window. Nothing here touches the three
 live videos or their folders.
 
-| Folder | Title | Sound |
-|---|---|---|
-| `toymaker/` | Christmas Snowfall at the Toymaker's Workshop | lo-fi music over a hearth fire and soft snow |
-| `stationmaster/` | Blizzard at the Stationmaster's Waiting Room | ambient: blizzard wind, stove, clock. No music |
-| `shepherd/` | Winter Wind at the Shepherd's Hut | ambient: moor wind and a wood stove. No music |
-| `observatory/` | Starry Night at the Stargazer's Observatory | settings only, not yet previewed (the style-reference painting) |
+| Folder | Title | Made as | Kit |
+|---|---|---|---|
+| `toymaker/` | Christmas Snowfall at the Toymaker's Workshop | lo-fi (home) and ambience | yes |
+| `stationmaster/` | Blizzard at the Stationmaster's Waiting Room | ambience (home) and lo-fi | yes |
+| `shepherd/` | Winter Wind at the Shepherd's Hut | ambience | not yet |
+| `observatory/` | Starry Night at the Stargazer's Observatory | lo-fi; settings only (the style-reference painting) | not yet |
+
+Two types of video, both with the foxes:
+
+- **lo-fi**: music composed for the whole length, with the scene's own sounds a set distance underneath it.
+- **ambience**: the scene's own sounds only. No music.
+
+A scene's picture and weather loop are the same for both; only the mix differs. Each scene has a home type, the one that suits
+it best. On thumbnails lo-fi carries a warm badge reading LO-FI and ambience a cold one reading NO MUSIC.
 
 ## Where the paintings come from
 
@@ -31,9 +39,11 @@ Every scene uses the same page, `scene.html?s=<folder>`. Everything specific to 
   ear base). `tools/rig.py <folder>` cuts them out of the picture into `<folder>/rig/` and fills in the fur behind them. Run it
   again whenever the picture is regraded.
 - `sound`: the wind, fire, clock and other sounds, all generated (nothing recorded or licensed).
-- `mix`: `ambient` (weather only) or `lofi` (music on top, weather a set distance underneath), and the loudness target.
+- `mix`: the loudness target, the scene's home type, and the settings for each type it is made in (`lofi`: the music and how far
+  under it the scene's sounds sit; `ambience`: nothing to set).
 - `hours`: the video length. The thumbnail badge, the title and the build all read this number, so they cannot disagree.
-- `thumbnail`: the two lines of the scene name and the accent colour.
+- `thumbnail`: the two lines of the scene name, the closer framing, and which moment of the loop each type's thumbnail shows.
+- `youtube`: the wording for titles and descriptions: the story of the place, then a block per type.
 
 ### What moves, and when
 
@@ -54,7 +64,7 @@ cd fox-scenes && python3 -m http.server 8791 --bind 127.0.0.1
 ```
 
 ```bash
-python3 fox-scenes/tools/preview.py toymaker 60
+python3 fox-scenes/tools/preview.py toymaker 60 --type lofi
 ```
 
 This renders 60 seconds of picture and sound into `fox-scenes/work/toymaker/` and prints a sound report. Preview clips are
@@ -65,11 +75,12 @@ three rules, and the report says pass or fail for each:
 2. Loudness on target (-14 LUFS, the level YouTube plays at) with peaks at or under -1 dBFS.
 3. Still clearly there on a phone speaker: no more than 7 dB lost through a small-speaker filter.
 
-Thumbnails: `node tools/still.js "http://127.0.0.1:8791/scene.html?s=toymaker" frame 36 --size 1920x1080`, then
-`node tools/thumb.js toymaker frame-36.png toymaker/youtube` writes three versions for YouTube's "Test & compare" (the whole
-scene with its name, closer with its name, closer with no name), each at 1280×720 with a 320×180 copy for judging it at feed
-size. They are a little brighter and richer than the video, on purpose. `python3 tools/youtube-text.py toymaker` writes the
-title, description, tags and pinned comment.
+Thumbnails: `node tools/still.js "http://127.0.0.1:8791/scene.html?s=toymaker" frame 36,97 --size 1920x1080`, then
+`node tools/thumb.js toymaker lofi frame-97.png toymaker/youtube/lofi` (and the same with `ambience` and `frame-36.png`).
+Each call writes three versions for YouTube's "Test & compare" (the whole scene with its name, closer with its name, closer
+with no name), each at 1280×720 with a 320×180 copy for judging it at feed size. They are a little brighter and richer than
+the video, on purpose. `python3 tools/youtube-text.py toymaker` writes `youtube/<type>/description.txt` for each type: title,
+description, tags and pinned comment.
 
 ## Making the loop and the two-hour video
 
@@ -94,7 +105,9 @@ loop's end into its start; the third writes `toymaker/video-kit/` (about 70 MB).
 2. It mixes the sound to -14 LUFS with peaks at -1 dBFS, 48 kHz stereo AAC at 384 kbps, full level from the first frame.
 3. It joins the loop for as many hours as `hours` says, then 20 seconds fading out, without re-encoding.
 
-`make-video.ipynb` does the same in Google Colab and saves the result to Google Drive; it downloads the kit from this branch,
+`build.py --type lofi` or `--type ambience` chooses the type; with neither, it makes the scene's home type.
+
+`make-video.ipynb` does the same in Google Colab (set `SCENE` and `TYPE`) and saves the result to Google Drive; it downloads the kit from this branch,
 so the branch name is written in it. A two-hour file is about 3 to 4.5 GB. `python3 tools/check-video.py <file>` checks a built
 video: the opening, every place the loop comes round, and the loudness.
 

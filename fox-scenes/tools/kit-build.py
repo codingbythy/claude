@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Assembles the long video from the parts in this folder. Copied into every scene's video-kit as build.py.
 
-Usage: build.py [output.mp4] [--loops N] [--scale 4]
-With no --loops, it makes the number of hours written in kit.json. Needs ffmpeg, and numpy for scenes with music.
+Usage: build.py [output.mp4] [--type lofi|ambience] [--loops N] [--scale 4]
+With no --type it makes the scene's home type; with no --loops, the number of hours written in kit.json.
+lofi is music over the scene's own sounds; ambience is the scene's sounds only. Needs ffmpeg, and numpy for lofi.
 
 What it does, in order:
   1. Enlarges the loop. loop-360.mp4 is the three-minute loop at the scene's own size (640x360, every pixel exact). It is
@@ -15,13 +16,17 @@ What it does, in order:
 import json, math, os, re, subprocess, sys
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
-K = json.load(open('kit.json')); M = K['mix']; Y = K['youtube']
+K = json.load(open('kit.json')); Y = K['youtube']
 argv = sys.argv[1:]
 opt = lambda name, default: argv[argv.index(name) + 1] if name in argv else default
 args = [a for i, a in enumerate(argv) if not a.startswith('--') and (i == 0 or not argv[i - 1].startswith('--'))]
 loops = int(opt('--loops', round(K['hours'] * 3600 / K['loop_seconds'])))
 scale = int(opt('--scale', Y['scale']))
-out = args[0] if args else f"{K['file_name']}.mp4"
+kind = opt('--type', K['home'])
+if kind not in K['mixes']:
+    sys.exit(f"This scene is not set up as {kind}; it has: {', '.join(K['mixes'])}")
+M = dict(K['mixes'][kind], target_lufs=K['target_lufs'])
+out = args[0] if args else f"{K['slug']}-{kind}-{K['hours']}h.mp4"
 total = loops * K['loop_seconds'] + K['outro_seconds']
 W, H = K['width'] * scale, K['height'] * scale
 
@@ -71,4 +76,4 @@ run(ff + ['-f', 'concat', '-safe', '0', '-i', 'list.txt', '-i', 'audio.m4a', '-m
 for f in ('list.txt', 'audio.m4a', 'music.wav', 'loop.mp4', 'outro.mp4'):
     if os.path.exists(f):
         os.remove(f)
-print(f'Built {out}: {total // 3600} h {total % 3600 // 60} min {total % 60} s, {W}x{H}, {os.path.getsize(out) / 1e9:.1f} GB')
+print(f'Built {out} ({kind}): {total // 3600} h {total % 3600 // 60} min {total % 60} s, {W}x{H}, {os.path.getsize(out) / 1e9:.1f} GB')

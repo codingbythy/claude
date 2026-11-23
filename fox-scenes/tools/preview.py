@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Builds a short preview clip of a fox scene: picture, weather sound and (for lo-fi scenes) music, mixed and levelled.
 
-Usage: preview.py <scene> [seconds=60] [--audio-only] [--port 8791]
+Usage: preview.py <scene> [seconds=60] [--type lofi|ambience] [--audio-only] [--port 8791]
 Needs the fox-scenes folder served locally first:  python3 -m http.server 8791 --bind 127.0.0.1   (run inside fox-scenes/)
 Writes fox-scenes/work/<scene>/<scene>-preview.mp4 (or .m4a with --audio-only) and prints a sound report.
 
@@ -14,11 +14,13 @@ import json, os, re, subprocess, sys
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(HERE); REPO = os.path.dirname(ROOT)
-args = [a for a in sys.argv[1:] if not a.startswith('--')]
+args = [a for i, a in enumerate(sys.argv[1:]) if not a.startswith('--') and sys.argv[i] not in ('--type', '--port')]
 scene = args[0]; secs = int(args[1]) if len(args) > 1 else 60
 audio_only = '--audio-only' in sys.argv
 port = sys.argv[sys.argv.index('--port') + 1] if '--port' in sys.argv else '8791'
-C = json.load(open(f'{ROOT}/{scene}/scene.json')); M = C['mix']
+C = json.load(open(f'{ROOT}/{scene}/scene.json'))
+kind = sys.argv[sys.argv.index('--type') + 1] if '--type' in sys.argv else C['mix']['home']
+M = dict(C['mix'][kind], target_lufs=C['mix']['target_lufs'], mode=kind)
 work = f'{ROOT}/work/{scene}'; os.makedirs(work, exist_ok=True)
 SR = 48000
 

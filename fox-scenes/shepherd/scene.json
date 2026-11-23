@@ -2,7 +2,7 @@
   "title": "Winter Wind at the Shepherd's Hut",
   "thumbnail": {"lines": ["WINTER WIND", "SHEPHERD'S HUT"], "accent": "#ffc878"},
   "hours": 2,
-  "youtube": {"hook": "Wind & Crackling Fire Sounds for Sleep & Relaxation", "story": ["High on the moor the wind has not dropped all night. The shepherd is out at the fold, the stove is lit, and two foxes are asleep on the sheepskin.", "Let it blow. The hut has stood through worse."], "sounds": ["Steady moor wind with long gusts", "A crackling wood stove", "No music"], "good_for": "Good for sleep, reading, studying, or settling after a long day.", "hashtags": ["#windsounds", "#sleepsounds", "#cozyambience"]},
+  "youtube": {"story": ["High on the moor the wind has not dropped all night. The shepherd is out at the fold, the stove is lit, and two foxes are asleep on the sheepskin.", "Let it blow. The hut has stood through worse."], "ambience": {"hook": "Wind & Crackling Fire Sounds for Sleep & Relaxation", "sounds": ["Steady moor wind with long gusts", "A crackling wood stove", "No music"], "good_for": "Good for sleep, reading, studying, or settling after a long day.", "hashtags": ["#windsounds", "#sleepsounds", "#cozyambience"]}},
   "size": [1280, 720],
   "image": "room.webp",
   "mask": "glass-mask.png",
@@ -15,5 +15,5 @@
   "steam": [{"x": 125, "y": 525}, {"x": 225, "y": 532}],
   "breathe": [{"cx": 600, "cy": 365, "rx": 195, "ry": 120, "amt": 0.012, "period": 4.5}, {"cx": 1010, "cy": 385, "rx": 185, "ry": 110, "amt": 0.012, "period": 5, "phase": 1.9}],
   "sound": {"wind": {"level": 0.9, "bed": 0.2, "bedF": 360, "body": 1.6, "bodyF": 430, "howl": 1.2, "howlF": [330, 760], "q": 2.2, "air": 0.015, "lull": 0.7}, "fire": {"kind": "hearth", "pan": 0.6, "roar": 0.45, "crackle": 4.5, "gap": 0.3}},
-  "mix": {"mode": "ambient", "target_lufs": -16}
+  "mix": {"target_lufs": -16, "home": "ambience", "ambience": {}}
 }
