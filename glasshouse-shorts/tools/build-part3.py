@@ -91,7 +91,7 @@ for k, d in enumerate((0.4, 0.3)): put(swipe(d, 2200, 8000), T_PH + 0.5 + 0.5 * 
 t0 = T_ONE; t = tt(T_OUT - t0); u = t / t[-1]
 dr = sum(a * np.sin(2*np.pi*f*t + 2*np.pi*0.3*np.sin(2*np.pi*r*t)) for f, a, r in ((55, 1, .07), (82.5, .55, .11), (110.6, .4, .05), (165.4, .22, .09), (58.3, .35, .13)))
 dr = dr + 0.5 * bp(rng.standard_normal(len(t)), 600, 2400) * (0.5 + 0.5*np.sin(2*np.pi*0.21*t)) * u**2
-put((dr * (0.1 + 0.9 * u**2) * np.minimum(1, (t[-1] - t) / 0.05)).astype(np.float32), t0, 0.075)
+put((dr * (0.1 + 0.9 * u**2) * np.minimum(1, (t[-1] - t) / 0.05)).astype(np.float32), t0, 0.03)
 t = tt(2.4); boom = np.sin(2*np.pi*np.cumsum(38 + 40*np.exp(-t/0.12))/SR) * np.exp(-t/0.55) + 0.4*lp(rng.standard_normal(len(t)), 160) * np.exp(-t/0.25)
 put(boom.astype(np.float32), T_OUT, 0.34)
 print("sfx peak", float(np.abs(sfx).max()), "clips", used); sf.write("sfx3.wav", np.clip(sfx, -0.95, 0.95), SR)
@@ -110,7 +110,7 @@ fc = (f"[0:v]fps=30,scale=1138:640:flags=area,eq=saturation=1.2:contrast=1.06,fo
       f"[lit][2:v]overlay=format=auto,format=yuv420p,ass=p3.ass:fontsdir=fonts,fade=in:st=0:d=0.2,fade=out:st={D-0.5:.2f}:d=0.5[v];"
       f"[3:a]aresample=48000,pan=stereo|c0=c0|c1=c0,volume=1.6[amb];[4:a]aresample=48000,volume='{duck}':eval=frame[mu];"
       f"[5:a]aresample=48000,highpass=f=70,acompressor=threshold=-22dB:ratio=2.5:attack=8:release=160,volume=3.1,adelay={int(LEAD*1000)}:all=1,pan=stereo|c0=c0|c1=c0[vo];"
-      f"[7:a]pan=stereo|c0=c0|c1=c0[fx];"
+      f"[7:a]volume=0.3,pan=stereo|c0=c0|c1=c0[fx];"
       f"[amb][mu][vo][fx]amix=inputs=4:normalize=0,alimiter=limit=0.89:level=disabled,afade=in:st=0:d=0.25,afade=out:st={D-1.2:.2f}:d=1.2[a]")
 subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-ss", "118", "-i", f"{KIT}/loop.mp4", "-loop", "1", "-i", "ts.png", "-loop", "1", "-i", "ov.png",
     "-ss", "118", "-i", f"{KIT}/ambience.flac", "-ss", "250", "-i", f"{KIT}/music.flac", "-i", "el/vo3.mp3", "-loop", "1", "-i", "cold.png", "-i", "sfx3.wav", "-loop", "1", "-i", "black.png",
