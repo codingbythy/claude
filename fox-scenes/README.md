@@ -14,10 +14,12 @@ Two types of video:
 
 - **lo-fi**: the foxes, with music over the scene's own sounds. The music is made with ACE-Step 1.5 in `make-music.ipynb`
   (see below); without those tracks the build composes simpler music of its own.
-- **ambience**: the scene's own sounds only. No music. A type can have its own picture: the stationmaster ambience shows the
-  waiting room alone, without the foxes, and opens with snow blowing clear across the screen. The channel's name is stamped
-  into the scene like a maker's mark on the suitcase, faded and partly see-through (`brand` in scene.json, drawn by
-  `tools/grade.py` on the pixel grid and lit like the leather under it).
+- **ambience**: the scene's own sounds only. No music. A type can have its own picture: the stationmaster ambience is the
+  waiting room repainted without the foxes (`painting-armchair-1280.png`, prompt in `painting-prompt-ambience.txt`): a much
+  bigger window, one deep armchair piled with cushions and blankets, and a big mug of hot chocolate with steam rising off it.
+  It opens with snow blowing clear across the screen. The channel's name is tooled into the leather of the suitcase, part of
+  the painting. Where a painting has no such place, `brand` in scene.json stamps the name into the picture on the pixel grid
+  (`tools/grade.py`), faded and lit like the surface under it.
 
 Each scene has a home type, the one that suits it best. On thumbnails lo-fi carries a warm badge reading LO-FI and ambience a
 cold one reading NO MUSIC.
@@ -45,12 +47,11 @@ Every scene uses the same page, `scene.html?s=<folder>`. Everything specific to 
 - `sound`: the wind, fire, clock and other sounds, all generated (nothing recorded or licensed).
 - `mix`: the loudness target, the scene's home type, and the settings for each type it is made in (`lofi`: the music and how far
   under it the scene's sounds sit; `ambience`: nothing to set).
-- `variants`: a type's own picture, e.g. `"ambience": {"painting": "painting-empty-1280.png", "image": "room-empty.webp",
-  "mask": "glass-mask-empty.png", "foxes": false}`. `tools/grade.py <folder> --variant ambience` and `tools/make-mask.py <folder>
+- `variants`: a type's own picture, e.g. `"ambience": {"painting": "painting-armchair-1280.png", "image": "room-armchair.webp",
+  "mask": "glass-mask-armchair.png", "foxes": false}`. `tools/grade.py <folder> --variant ambience` and `tools/make-mask.py <folder>
   --variant ambience` make its picture and window mask (a variant can also bring its own `glass`, `grade`, `brand`, and the
-  `glows`, `flames`, `sparks` and `steam` of a repainted room); `scene.html?s=<folder>&type=ambience` shows it. The stationmaster's
-  empty bench was rebuilt from the painting itself by `tools/empty-bench.py` (the plank back, the far post and the tartan
-  continued from what was visible), not regenerated.
+  `glows`, `flames`, `sparks` and `steam` of a repainted room); `scene.html?s=<folder>&type=ambience` shows it. `tools/empty-bench.py`
+  removes the foxes from a painting by continuing what is visible around them (it made the first fox-free stationmaster room).
 - `hours`: the video length. The thumbnail badge, the title and the build all read this number, so they cannot disagree.
 - `thumbnail`: the two lines of the scene name, the closer framing, and which moment of the loop each type's thumbnail shows.
 - `youtube`: the wording for titles and descriptions: the story of the place, then a block per type.

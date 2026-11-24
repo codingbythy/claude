@@ -50,8 +50,7 @@
    "music_eq": "bass=g=-6:f=200:w=0.7,treble=g=9:f=1100:w=0.6"
   },
   "ambience": {
-   "open": 6,
-   "mark": true
+   "open": 6
   }
  },
  "pictures": {
@@ -73,7 +72,6 @@
   ],
   "lead": 4
  },
- "mark": "mark.png",
  "files": [
   "loop-360.mp4",
   "loop-ambience-360.mp4",
@@ -83,7 +81,6 @@
   "ambience-3.flac",
   "ambience-4.flac",
   "build.py",
-  "music-long.py",
-  "mark.png"
+  "music-long.py"
  ]
 }
