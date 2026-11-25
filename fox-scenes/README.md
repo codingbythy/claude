@@ -22,7 +22,7 @@ Two types of video:
   (`tools/grade.py`), faded and lit like the surface under it.
 
 Each scene has a home type, the one that suits it best. On thumbnails lo-fi carries a warm badge reading LO-FI and ambience a
-cold one reading NO MUSIC.
+cold one reading AMBIENT ("NO MUSIC" read as if there were no sound at all).
 
 ## Where the paintings come from
 

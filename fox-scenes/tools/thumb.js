@@ -9,7 +9,7 @@
 // uses) and the second badge and the accent colour come from the type.
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path');
-const KINDS = { lofi: { kind: 'LO-FI', accent: '#ffcf70' }, ambience: { kind: 'NO MUSIC', accent: '#9fd0ee' } };
+const KINDS = { lofi: { kind: 'LO-FI', accent: '#ffcf70' }, ambience: { kind: 'AMBIENT', accent: '#9fd0ee' } };
 (async () => {
   const [scene, type, frame, outDir] = process.argv.slice(2);
   if (!KINDS[type]) throw new Error('type must be lofi or ambience');
