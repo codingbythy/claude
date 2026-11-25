@@ -26,14 +26,16 @@ args = [a for i, a in enumerate(argv) if not a.startswith('--') and (i == 0 or n
 music_dir = os.path.abspath(opt('--music-dir', '')) if '--music-dir' in argv else None
 out = os.path.abspath(args[0]) if args else None
 os.chdir(HERE)
-K = json.load(open('kit.json')); Y = K['youtube']
-loops = int(opt('--loops', round(K['hours'] * 3600 / K['loop_seconds'])))
-scale = int(opt('--scale', Y['scale']))
+K = json.load(open('kit.json'))
 kind = opt('--type', K['home'])
 if kind not in K['mixes']:
     sys.exit(f"This scene is not set up as {kind}; it has: {', '.join(K['mixes'])}")
 M = dict(K['mixes'][kind], target_lufs=K['target_lufs'])
-out = out or f"{K['slug']}-{kind}-{K['hours']}h.mp4"
+HOURS = M.get('hours', K['hours'])                                   # a type can have its own length (ambience runs all night)
+Y = dict(K['youtube'], **M.get('youtube', {}))                        # and its own encoding (a smaller file for the long ones)
+loops = int(opt('--loops', round(HOURS * 3600 / K['loop_seconds'])))
+scale = int(opt('--scale', Y['scale']))
+out = out or f"{K['slug']}-{kind}-{HOURS}h.mp4"
 LOOP, OUTRO, SR = K['loop_seconds'], K['outro_seconds'], 48000
 total = loops * LOOP + OUTRO
 W, H = K['width'] * scale, K['height'] * scale
@@ -146,7 +148,12 @@ def playlist(folder, seconds, dst):
     return len(files)
 
 
-tail = f"alimiter=limit=0.86:level=disabled,afade=out:st={total - 14}:d=14[a]"
+# The ceiling: a gentle roll-off above 12 kHz, then a limiter working at four times the sample rate, so the sharp edges of
+# crackles cannot overshoot between samples or in the AAC encoding (true peaks stay under -1 dBFS). A fire-led mix loses a
+# little loudness to the limiter; "makeup_db" in the type's mix settings gives it back.
+tail = (f"lowpass=f=12000,lowpass=f=14000,aresample=192000,alimiter=limit=0.7:level=disabled:release=100,aresample=48000,"
+        f"afade=out:st={total - 14}:d=14[a]")
+up = M.get('makeup_db', 0)
 takes = K.get('takes')
 inputs = ['-f', 's16le', '-ar', str(SR), '-ac', '2', '-i', '-'] if takes else ['-stream_loop', '-1', '-i', 'ambience.flac']
 music = M.get('music')
@@ -163,10 +170,10 @@ if music or (music_dir and kind == 'lofi'):
     amb_level = -20 + M['ambience_vs_music_db']                                      # the weather sits this far under the music
     both = 10 * math.log10(10 ** (-20 / 10) + 10 ** (amb_level / 10))                # the two together
     graph = (f"[0:a]volume={amb_level - K['ambience_lufs']:.2f}dB[amb];[1:a]aresample=48000,{eq}volume={-20 - mus:.2f}dB[mus];"
-             f"[amb][mus]amix=inputs=2:normalize=0,volume={M['target_lufs'] - both:.2f}dB,{tail}")
+             f"[amb][mus]amix=inputs=2:normalize=0,volume={M['target_lufs'] - both + up:.2f}dB,{tail}")
     inputs += ['-i', 'music.wav']
 else:
-    graph = f"[0:a]volume={M['target_lufs'] - K['ambience_lufs']:.2f}dB,{tail}"
+    graph = f"[0:a]volume={M['target_lufs'] - K['ambience_lufs'] + up:.2f}dB,{tail}"
 print('Mixing the sound...')
 mix = ff + inputs + ['-filter_complex', graph, '-map', '[a]', '-t', str(total), '-c:a', 'aac', '-b:a', Y['audio_bitrate'], '-ar', '48000', 'audio.m4a']
 if takes:

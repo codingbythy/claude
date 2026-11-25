@@ -52,7 +52,8 @@ Every scene uses the same page, `scene.html?s=<folder>`. Everything specific to 
   --variant ambience` make its picture and window mask (a variant can also bring its own `glass`, `grade`, `brand`, and the
   `glows`, `flames`, `sparks` and `steam` of a repainted room); `scene.html?s=<folder>&type=ambience` shows it. `tools/empty-bench.py`
   removes the foxes from a painting by continuing what is visible around them (it made the first fox-free stationmaster room).
-- `hours`: the video length. The thumbnail badge, the title and the build all read this number, so they cannot disagree.
+- `hours`: the video length (lo-fi, 2). A type can set its own in its mix settings (`mix.ambience.hours`: 3). The thumbnail
+  badge, the title and the build all read the same number, so they cannot disagree.
 - `thumbnail`: the two lines of the scene name, the closer framing, and which moment of the loop each type's thumbnail shows.
 - `youtube`: the wording for titles and descriptions: the story of the place, then a block per type.
 
@@ -64,6 +65,14 @@ Every scene uses the same page, `scene.html?s=<folder>`. Everything specific to 
   The wind sound gets louder and higher exactly when the snow gets heavier, and the snow ticking on the glass follows too.
 - **The fire.** It flares up and dies back. When it flares it crackles more, glows brighter and throws more sparks. The loud
   pops fall at fixed moments of the loop, and each one throws a burst of sparks and a flash of firelight in the picture.
+
+### The fire in front, the storm through the wall
+
+In the ambience series the fire is the foreground and the blizzard is heard muffled, as if through the timber walls.
+`sound.wind.muffle` (Hz) sends the whole storm, its gust thumps and its moans included, through a steep low-pass; the fire's
+crackle gets `density` (more small crackle, the same loud pops, so the picture's sparks still match) and `clip`, a soft
+ceiling that lets the crackle be loud without spiking. Add `&mute=wind,fire,clock` to the page to render any part alone;
+for the stationmaster the fire alone measures about 6 dB louder than the storm alone.
 
 ### Sound that does not repeat
 
@@ -139,8 +148,10 @@ loop's end into its start; the third writes `toymaker/video-kit/` (about 70 MB).
 1. It enlarges the loop four times over to 2560×1440 with hard pixel edges, so it stays perfectly sharp, and encodes it once
    (H.264 High, 30 fps, BT.709, tagged). YouTube gives uploads above 1080p a higher-quality stream, and each of its smaller
    sizes (1080p, 720p) is a whole number of screen pixels per scene pixel.
-2. It mixes the sound to -14 LUFS with peaks at -1 dBFS, 48 kHz stereo AAC at 384 kbps, full level from the first frame.
-3. It joins the loop for as many hours as `hours` says, then 20 seconds fading out, without re-encoding. Where a type has an
+2. It mixes the sound to -14 LUFS, 48 kHz stereo AAC at 384 kbps, full level from the first frame. A gentle roll-off above
+   12 kHz and a limiter working at four times the sample rate keep the true peaks under -1 dBFS even after AAC encoding
+   (sharp crackles otherwise overshoot); `makeup_db` in a type's mix gives back the loudness the limiter takes.
+3. It joins the loop for as many hours as the type's `hours` says, then 20 seconds fading out, without re-encoding. Where a type has an
    opening, the opening replaces the first 12 seconds of the first loop (it is the same picture once the snow has cleared,
    frame for frame). A type whose mix sets `"mark": true` also gets `channel/somewhere-sheltered-mark.png` (`tools/mark.js`)
    over the bottom right-hand corner, fading in at 3.5 seconds; the stationmaster ambience no longer uses it, its name is in

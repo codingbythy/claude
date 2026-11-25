@@ -18,7 +18,8 @@ const KINDS = { lofi: { kind: 'LO-FI', accent: '#ffcf70' }, ambience: { kind: 'A
   const close = V.thumbnail_close || T.close;      // a type with its own picture (no foxes) frames the closer versions its own way
   // what the words must never cover (the hot chocolate), in layout pixels in scene.json, in the 1920x1080 frame here
   const keep = (V.thumbnail_keep_clear || T.keep_clear || []).map(b => b.map(v => v * 1.5));
-  const base = { bg: 'file://' + path.resolve(frame), keep, ...KINDS[type], badge: `${C.hours} HOUR${C.hours === 1 ? '' : 'S'}`, boost: T.boost || [1.12, 1.12, 1.04] };
+  const H = (C.mix[type] || {}).hours || C.hours;      // a type can have its own length (ambience runs all night)
+  const base = { bg: 'file://' + path.resolve(frame), keep, ...KINDS[type], badge: `${H} HOUR${H === 1 ? '' : 'S'}`, boost: T.boost || [1.12, 1.12, 1.04] };
   const versions = { a: { crop: [0, 0, 1920], lines: T.lines }, b: { crop: close, lines: T.lines }, c: { crop: close, lines: [] } };
   fs.mkdirSync(outDir, { recursive: true });
   const b = await chromium.launch();

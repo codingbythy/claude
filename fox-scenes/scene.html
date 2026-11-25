@@ -44,7 +44,7 @@ html, body { margin: 0; height: 100%; background: #07090d; overflow: hidden; }
   /* The picture draws its chance from Math.random (seeded by the renderer). The sound has its own stream, chosen by &take=,
      so any number of different takes of the sound fit the one rendered picture. */
   const stream = a => () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
-  const TAKE = +Q.get('take') || 0, OPEN = +Q.get('open') || 0;
+  const TAKE = +Q.get('take') || 0, OPEN = +Q.get('open') || 0, MUTE = new Set((Q.get('mute') || '').split(',')), on = k => !MUTE.has(k);
   const [SW, SH] = C.size, GW = Math.round(SW / 2), GH = Math.round(SH / 2), TAU = Math.PI * 2, LOOP = 180;
   const PIX = !!(C.grade && C.grade.pixel);       /* a painting snapped to a true pixel grid is animated on that grid too */
   const $ = id => document.getElementById(id);
@@ -360,16 +360,16 @@ html, body { margin: 0; height: 100%; background: #07090d; overflow: hidden; }
   const pan = p => { const n = ac.createStereoPanner(); n.pan.value = p; return n; };
   function chain() { for (let i = 1; i < arguments.length; i++) arguments[i - 1].connect(arguments[i]); return arguments[arguments.length - 1]; }
   function loop(buf, rate, at) { const s = ac.createBufferSource(); s.buffer = buf; s.loop = true; s.playbackRate.value = rate || 1; s.start(0, at || 0); return s; }
-  function click(at, f, q, peak, len, where, buf) {     /* a short filtered burst: a crackle, a tap on the glass, a clock tick */
+  function click(at, f, q, peak, len, where, buf, dest) {     /* a short filtered burst: a crackle, a tap on the glass, a clock tick */
     const src = ac.createBufferSource(); src.buffer = buf || A.white; const g = gain(0), p = pan(where);
     g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(peak, at + 0.002); g.gain.exponentialRampToValueAtTime(0.0004, at + len);
-    chain(src, filt('bandpass', f, q), g, p, A.master); src.start(at, srnd() * 2.5, len + 0.03);
+    chain(src, filt('bandpass', f, q), g, p, dest || A.master); src.start(at, srnd() * 2.5, len + 0.03);
   }
-  function swell(buf, rate, type, f, q, peak, at, up, len, where, glide) {     /* filtered noise that rises and dies away: a buffet of wind, a whistle in a gap */
+  function swell(buf, rate, type, f, q, peak, at, up, len, where, glide, dest) {     /* filtered noise that rises and dies away: a buffet of wind, a whistle in a gap */
     const src = ac.createBufferSource(), fl = filt(type, f, q), g = gain(0); src.buffer = buf; src.loop = true; src.playbackRate.value = rate;
     g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(peak, at + up); g.gain.setTargetAtTime(0, at + up, (len - up) / 4);
     if (glide) { fl.frequency.setValueAtTime(f, at); fl.frequency.linearRampToValueAtTime(f * glide[0], at + len * 0.45); fl.frequency.linearRampToValueAtTime(f * glide[1], at + len); }
-    chain(src, fl, g, pan(where), A.master); src.start(at, srnd() * 3); src.stop(at + len + 0.6);
+    chain(src, fl, g, pan(where), dest || A.master); src.start(at, srnd() * 3); src.stop(at + len + 0.6);
   }
   /* how loud the wind is for a given storm strength: never silent in the lulls, full in the surges */
   const windLevel = g => { const lull = S.wind.lull === undefined ? 0.5 : S.wind.lull; return S.wind.level * (lull + (1 - lull) * Math.pow(g, 1.2)); };
@@ -380,9 +380,13 @@ html, body { margin: 0; height: 100%; background: #07090d; overflow: hidden; }
     comp.threshold.value = -20; comp.ratio.value = 2.5; comp.attack.value = 0.03; comp.release.value = 0.5;
     chain(master, filt('highpass', 40, 0.7), comp, ac.destination);     /* nothing below 40 Hz: it is inaudible and only eats headroom */
     A = { brown: noise(13, 'brown'), pink: noise(11, 'pink'), white: noise(4, 'white'), master, sides: [], next: {} };
+    /* The wall. With wind.muffle set, the storm is heard through the timber: everything above the muffle frequency falls away
+       steeply (two filters in a row), so what is left is the weight and the moan of it, not the hiss. */
+    A.storm = master;
+    if (S.wind && S.wind.muffle) { const m = S.wind.muffle; A.storm = filt('lowpass', m, 0.55); chain(A.storm, filt('lowpass', m * 1.35, 0.55), master); }
     const now = atime(), g0 = gustS(clock()), E = S.events || {};
-    if (S.wind) for (const side of [-1, 1]) {       /* left and right read different stretches of the noise, so the wind has width */
-      const w = S.wind, p = pan(side * 0.75), o = side < 0 ? 0 : 5.3, bus = gain(windLevel(g0)); chain(bus, p, master);
+    if (S.wind && on('wind')) for (const side of [-1, 1]) {       /* left and right read different stretches of the noise, so the wind has width */
+      const w = S.wind, p = pan(side * 0.75), o = side < 0 ? 0 : 5.3, bus = gain(windLevel(g0)); chain(bus, p, A.storm);
       chain(loop(A.brown, 0.9, o), filt('highpass', 80), filt('lowpass', w.bedF || 380), gain(w.bed), bus);            /* the low weight of it */
       const bodyG = gain(w.body * (0.5 + 0.75 * g0)), howlF = filt('bandpass', 700, w.q || 2.5), howlG = gain(w.howl * (0.12 + 0.9 * g0 * g0)), airG = gain(w.air * (0.3 + g0));
       const bodyF = filt('bandpass', w.bodyF || 480, 0.5);
@@ -391,17 +395,25 @@ html, body { margin: 0; height: 100%; background: #07090d; overflow: hidden; }
       chain(loop(A.white, 1, o * 0.3), filt('bandpass', w.airF || 2800, 0.6), airG, bus);                              /* air and snow hissing on the glass */
       A.sides.push({ bus, bodyF, bodyG, howlF, howlG, airG, lag: side < 0 ? 0 : 0.9 });
     }
-    if (S.fire) {
+    if (S.fire && on('fire')) {
       const f = S.fire; A.roarG = gain(f.roar);
+      /* the crackle has its own ceiling: each crackle keeps its snap but the loudest pops cannot spike far above the rest, so
+         the fire can sit in front without the final limiter crushing it */
+      A.crack = master;
+      if (f.clip) {         /* a soft ceiling: crackle = ceiling * tanh(drive * crackle). Below it the crackle is untouched; the loudest pops are rounded off. */
+        const R = 8, n = 4096, curve = new Float32Array(n), sh = ac.createWaveShaper();
+        for (let i = 0; i < n; i++) curve[i] = Math.tanh(f.clip.drive * R * (2 * i / (n - 1) - 1));
+        sh.curve = curve; sh.oversample = '4x'; A.crack = gain(1 / R); chain(A.crack, sh, gain(f.clip.ceiling), master);
+      }
       chain(loop(A.brown, 1.6, 2), filt('bandpass', f.kind === 'stove' ? 230 : 320, 0.5), A.roarG, pan(f.pan), master);
       A.next.pop = now + 0.2; A.next.tink = now + srand(3, 8); A.popped = clock();
     }
     if (S.simmer) chain(loop(A.white, 1, 1), filt('bandpass', 5200, 0.8), gain(S.simmer.level), pan(S.simmer.pan), master);
-    if (S.clock) A.next.clock = Math.ceil(now);
-    if (S.taps) A.next.tap = now + 0.3;
-    if (E.buffet) A.next.buffet = now + srand(4, 22);
-    if (E.whistle) A.next.whistle = now + srand(15, 50);
-    if (E.settle) A.next.settle = now + srand(20, 60);
+    if (S.clock && on('clock')) A.next.clock = Math.ceil(now);
+    if (S.taps && on('wind')) A.next.tap = now + 0.3;
+    if (E.buffet && on('wind')) A.next.buffet = now + srand(4, 22);
+    if (E.whistle && on('wind')) A.next.whistle = now + srand(15, 50);
+    if (E.settle && on('fire')) A.next.settle = now + srand(20, 60);
   }
   const expo = mean => -Math.log(1 - srnd()) * mean;
   const note = (kind, at) => { if (R) (R.log = R.log || []).push([kind, Math.round(at * 100) / 100]); };      /* for the renderer: what happened when */
@@ -417,18 +429,18 @@ html, body { margin: 0; height: 100%; background: #07090d; overflow: hidden; }
       s.howlG.gain.setTargetAtTime(w.howl * (0.12 + 0.9 * g * g), now, 0.7);
       s.airG.gain.setTargetAtTime(w.air * (0.3 + g), now, 0.7);
     });
-    if (S.fire) {
+    if (S.fire && A.roarG) {
       const f = S.fire, stove = f.kind === 'stove';
       A.roarG.gain.setTargetAtTime(f.roar * (0.7 + 0.5 * fireLife(t + 0.4)) * (0.85 + 0.3 * srnd()), now, 0.4);
       if (A.next.pop < now) A.next.pop = now + 0.05;
       while (A.next.pop < ahead) {      /* the small crackle: a lively fire crackles faster and louder, a low fire ticks over */
         const at = A.next.pop, F = fireLife(t + (at - now)), where = clamp(f.pan + srand(-0.18, 0.18), -1, 1), lv = f.crackle * (0.5 + 0.95 * F);
-        if (stove) click(at, srand(900, 2600), srand(1, 2.5), lv * (Math.pow(srnd(), 2.2) * 0.3 + 0.02), srand(0.008, 0.03), where);
-        else click(at, srand(1400, 5200), srand(0.8, 2.5), lv * (Math.pow(srnd(), 2.2) * 0.34 + 0.02), srand(0.006, 0.03), where);
-        A.next.pop += expo((srnd() < 0.25 ? 0.05 : f.gap || 0.3) / (0.4 + 1.4 * F));
+        if (stove) click(at, srand(900, 2600), srand(1, 2.5), lv * (Math.pow(srnd(), 2.2) * 0.3 + 0.02), srand(0.008, 0.03), where, null, A.crack);
+        else click(at, srand(1400, 5200), srand(0.8, 2.5), lv * (Math.pow(srnd(), 2.2) * 0.34 + 0.02), srand(0.006, 0.03), where, null, A.crack);
+        A.next.pop += expo((srnd() < 0.25 ? 0.05 : f.gap || 0.3) / (0.4 + 1.4 * F) / (f.density || 1));      /* density: more small crackle, same loud pops */
       }
       for (const p of popsIn(A.popped, t + 2.5))      /* the loud pops, at their fixed moments: the picture answers each with sparks and a flash */
-        click(now + (p - t), stove ? srand(500, 1100) : srand(500, 1400), srand(1, 2.5), f.crackle * (0.5 + 0.95 * fireLife(p)) * srand(0.3, 0.6), srand(0.03, 0.07), clamp(f.pan + srand(-0.18, 0.18), -1, 1));
+        click(now + (p - t), stove ? srand(500, 1100) : srand(500, 1400), srand(1, 2.5), f.crackle * (0.5 + 0.95 * fireLife(p)) * srand(0.3, 0.6), srand(0.03, 0.07), clamp(f.pan + srand(-0.18, 0.18), -1, 1), null, A.crack);
       A.popped = t + 2.5;
       while (f.tink && A.next.tink < ahead) {      /* the iron ticking as it warms and cools */
         const o = ac.createOscillator(), g = gain(0), at = A.next.tink; o.frequency.value = srand(2300, 3700);
@@ -438,25 +450,26 @@ html, body { margin: 0; height: 100%; background: #07090d; overflow: hidden; }
       while (E.settle && A.next.settle < ahead) {      /* now and then a log shifts: a soft thump, a flurry of crackles, the fire drawing harder for a moment */
         const at = A.next.settle; A.next.settle += expo(E.settle.gap) + 15; note('settle', t + (at - now));
         click(at, srand(110, 170), 1.2, E.settle.level * srand(0.7, 1), srand(0.2, 0.32), f.pan, A.brown);
-        for (let k = 0, n = 6 + Math.floor(srnd() * 8); k < n; k++) click(at + 0.05 + Math.pow(srnd(), 1.6) * 1.2, srand(900, 3200), srand(1, 2.5), f.crackle * srand(0.1, 0.5), srand(0.008, 0.03), clamp(f.pan + srand(-0.15, 0.15), -1, 1));
+        for (let k = 0, n = 6 + Math.floor(srnd() * 8); k < n; k++) click(at + 0.05 + Math.pow(srnd(), 1.6) * 1.2, srand(900, 3200), srand(1, 2.5), f.crackle * srand(0.1, 0.5), srand(0.008, 0.03), clamp(f.pan + srand(-0.15, 0.15), -1, 1), null, A.crack);
         swell(A.brown, 1.6, 'bandpass', stove ? 230 : 320, 0.5, f.roar * 2.5, at + 0.1, 0.4, srand(2, 3.5), f.pan);
       }
     }
-    while (E.buffet && S.wind && A.next.buffet < ahead) {      /* a gust hits the wall: a low thump, a rush of air, the sash rattling in its frame */
+    while (E.buffet && A.next.buffet !== undefined && A.next.buffet < ahead) {      /* a gust hits the wall: a low thump, a rush of air, the sash rattling in its frame */
       const at = A.next.buffet, g = gustS(t + (at - now)); A.next.buffet += expo(E.buffet.gap) + 4;
       if (g < 0.4) continue;                                    /* only while it is blowing */
       const len = srand(1.8, 3.4), up = srand(0.3, 0.6), where = srand(-0.85, 0.1), lv = E.buffet.level * (0.6 + 0.5 * g); note('buffet', t + (at - now));
-      swell(A.brown, 1.3, 'lowpass', srand(150, 240), 0.7, lv * 0.3, at, up, len, where);
-      swell(A.pink, 1, 'bandpass', srand(380, 620), 0.8, lv * 0.9, at, up, len * 0.8, where);
+      swell(A.brown, 1.3, 'lowpass', srand(150, 240), 0.7, lv * 0.3, at, up, len, where, null, A.storm);
+      swell(A.pink, 1, 'bandpass', srand(380, 620), 0.8, lv * 0.9, at, up, len * 0.8, where, null, A.storm);
       if (E.buffet.rattle) for (let k = 0, n = 5 + Math.floor(srnd() * 9), x = at + up * 0.6; k < n; k++) {
         click(x, srand(600, 1500), srand(3, 6), E.buffet.rattle * lv * srand(0.3, 1), srand(0.012, 0.03), clamp(where - 0.1, -1, 1)); x += srand(0.035, 0.07) * (1 + 0.12 * k);
       }
     }
-    while (E.whistle && S.wind && A.next.whistle < ahead) {    /* the wind finds a gap in the window frame and sings in it for a moment */
+    while (E.whistle && A.next.whistle !== undefined && A.next.whistle < ahead) {    /* the wind finds a gap and sings (or, through a wall, moans) in it for a moment */
       const at = A.next.whistle, g = gustS(t + (at - now)); A.next.whistle += expo(E.whistle.gap) + 8;
       if (g < 0.55) continue;
       const len = srand(2.5, 5); note('whistle', t + (at - now));
-      swell(A.pink, 1, 'bandpass', srand(880, 1500), E.whistle.q || 9, E.whistle.level * (0.4 + 0.8 * g), at, len * 0.35, len, srand(-0.9, -0.3), [srand(1.06, 1.18), srand(0.9, 1)]);
+      const wf = E.whistle.f || [880, 1500];
+      swell(A.pink, 1, 'bandpass', srand(wf[0], wf[1]), E.whistle.q || 9, E.whistle.level * (0.4 + 0.8 * g), at, len * 0.35, len, srand(-0.9, -0.3), [srand(1.06, 1.18), srand(0.9, 1)], A.storm);
     }
     while (S.clock && A.next.clock < ahead) {      /* on the second exactly, so it lines up when the loop comes round */
       const at = A.next.clock, tock = Math.round(at) % 2; click(at, tock ? 1500 : 2100, 6, S.clock.level, 0.014, S.clock.pan); A.next.clock += 1;

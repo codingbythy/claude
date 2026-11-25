@@ -47,10 +47,13 @@
     ]
    },
    "ambience_vs_music_db": -5,
+   "makeup_db": 0.4,
    "music_eq": "bass=g=-6:f=200:w=0.7,treble=g=9:f=1100:w=0.6"
   },
   "ambience": {
-   "open": 6
+   "open": 6,
+   "hours": 3,
+   "makeup_db": 2.0
   }
  },
  "pictures": {
