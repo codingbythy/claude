@@ -142,7 +142,8 @@ python3 fox-scenes/tools/make-kit.py toymaker
 The first command renders the loop at the scene's own size, every pixel exact (about 8 minutes); the second blends the
 loop's end into its start; the third writes `toymaker/video-kit/` (about 70 MB). `make-kit.py` also packs, when they exist in
 `work/<scene>/`: a type's own loop (`loop-<type>/`, rendered from `scene.html?s=<scene>&type=<type>`), its opening
-(`open-<type>/`, 16 s rendered with `&type=<type>&open=6`), and the sound takes (`takes/<n>/`, 184 s each with
+(`open-<type>/`, 16 s rendered with `&type=<type>&open=6&openfrom=1`: the white-out lasts 6 s and the video starts 1 s
+into it, with the room already half showing), and the sound takes (`takes/<n>/`, 184 s each with
 `--audio-only` and `&take=<n>`). The stationmaster kit has four takes and comes to about 190 MB. The kit's `build.py` then makes the upload:
 
 1. It enlarges the loop four times over to 2560×1440 with hard pixel edges, so it stays perfectly sharp, and encodes it once
