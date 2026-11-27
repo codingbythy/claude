@@ -171,7 +171,7 @@ into it, with the room already half showing), and the sound takes (`takes/<n>/`,
 
 `build.py --type lofi` or `--type ambience` chooses the type; with neither, it makes the scene's home type.
 
-`make-video.ipynb` does the same in Google Colab (set `SCENE` and `TYPE`) and saves the result to Google Drive; it downloads the kit from this branch,
+`stationmaster-ambience.ipynb` makes the blizzard station ambience with nothing to set: press play. `make-video.ipynb` does the same in Google Colab for any scene and type (set `SCENE` and `TYPE`) and saves the result to Google Drive; it downloads the kit from this branch,
 so the branch name is written in it. A two-hour file is about 3 to 4.5 GB. `python3 tools/check-video.py <file>` checks a built
 video: the opening, every place the loop comes round, and the loudness (`--open 12` for a video with an opening).
 
