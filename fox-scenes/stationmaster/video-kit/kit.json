@@ -48,12 +48,24 @@
    },
    "ambience_vs_music_db": -5,
    "makeup_db": 0.4,
-   "music_eq": "bass=g=-6:f=200:w=0.7,treble=g=9:f=1100:w=0.6"
+   "music_eq": "bass=g=-6:f=200:w=0.7,treble=g=9:f=1100:w=0.6",
+   "ceiling": {
+    "top_hz": 16000,
+    "attack": 1,
+    "release": 20
+   }
   },
   "ambience": {
    "open": 6,
+   "open_from": 1,
    "hours": 3,
-   "makeup_db": 2.0
+   "makeup_db": 1.0,
+   "target_lufs": -16.5,
+   "ceiling": {
+    "top_hz": 16000,
+    "attack": 1,
+    "release": 20
+   }
   }
  },
  "pictures": {
@@ -75,6 +87,33 @@
   ],
   "lead": 4
  },
+ "fire": {
+  "name": "myNoise Fireplace, Warm and Cosy (used with permission)",
+  "drive_folder": "fire-stems",
+  "bands": [
+   {
+    "a": "1a",
+    "b": "1b",
+    "level": 0.75
+   },
+   {
+    "a": "3a",
+    "b": "3b",
+    "level": 0.525
+   },
+   {
+    "a": "6b",
+    "b": "6a",
+    "level": 0.375
+   }
+  ],
+  "stretch": 1.85,
+  "master": 0.5,
+  "rate": 1.0,
+  "over_storm_db": 6,
+  "offset": 700,
+  "lufs": -38.8
+ },
  "files": [
   "loop-360.mp4",
   "loop-ambience-360.mp4",
@@ -84,6 +123,7 @@
   "ambience-3.flac",
   "ambience-4.flac",
   "build.py",
-  "music-long.py"
+  "music-long.py",
+  "stemfire.py"
  ]
 }

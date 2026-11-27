@@ -8,6 +8,8 @@ Reads from fox-scenes/work/<scene>/:
   open-<type>/raw.mp4       that type's opening, when its mix sets "open" (render.js on the page with &type=..&open=.., 16 s)
   takes/<n>/raw.f32         takes of the sound (render.js --audio-only on the page with &take=<n>, 184 s each)
   loop/loop.wav             the single sound loop, used only when there are no takes
+  fire-stems/               a fire made from recorded stems (scene.json mix.fire), used to measure its loudness; the
+                            stems themselves never go into the kit (see tools/stemfire.py)
 Writes fox-scenes/<scene>/video-kit/: the loops and openings at the scene's own size (every pixel exact), the sound takes,
 the corner mark if a type uses it, kit.json, build.py (and music-long.py for scenes made as lo-fi). The kit stays small;
 build.py enlarges the picture for YouTube and can make either type the scene is set up for. --settings-only rewrites
@@ -75,8 +77,11 @@ if not ONLY:
             if len(a) < (LOOP + LEAD) * SR:
                 sys.exit(f'{f} holds {len(a) / SR:.0f} s; a take is {LOOP + LEAD} s')
         lufs, peak = measure(np.concatenate([a[LEAD * SR:(LOOP + LEAD) * SR] for a in takes])); gain = -20 - lufs       # one gain for all, so they keep their own balance
-        if peak + gain > -1:
-            sys.exit(f'{scene}: the sound would peak at {peak + gain:.1f} dBFS at -20 LUFS; lower the loud moments in the scene sound first')
+        under = 0.0
+        if C['mix'].get('fire'):            # with a fire on top, the storm ends up this much lower in the finished sound
+            over = C['mix']['fire']['over_storm_db']; under = -10 * np.log10(1 + 10 ** (over / 10))
+        if peak + gain + under > -1:
+            sys.exit(f'{scene}: the sound would peak at {peak + gain + under:.1f} dBFS at -20 LUFS; lower the loud moments in the scene sound first')
         for i, a in enumerate(takes):
             flac(a[:(LOOP + LEAD) * SR], gain, f'{KIT}/ambience-{i + 1}.flac')
     else:
@@ -98,6 +103,13 @@ kit = {'title': C['title'], 'slug': re.sub(r'[^a-z0-9]+', '-', C['title'].lower(
        'ambience_lufs': -20, 'target_lufs': C['mix']['target_lufs'], 'home': C['mix']['home'], 'mixes': mixes, 'pictures': pictures}
 if sound:
     kit['takes'] = {'files': sound, 'lead': LEAD}
+if C['mix'].get('fire'):                 # the fire: its settings and measured loudness go in the kit, its stems do not
+    sys.path.insert(0, HERE); from stemfire import StemFire
+    F = dict(C['mix']['fire']); fire = StemFire(F, f'{W}/fire-stems').render(300 * SR, 600 * SR)
+    log = subprocess.run(['ffmpeg', '-hide_banner', '-nostats', '-f', 'f32le', '-ar', str(SR), '-ac', '2', '-i', '-', '-af', 'highpass=f=40,ebur128', '-f', 'null', '-'], input=fire.tobytes(), capture_output=True).stderr.decode()
+    F['lufs'] = float(re.search(r'I:\s+(-?[\d.]+) LUFS', log[log.rindex('Summary:'):]).group(1))
+    kit['fire'] = F; shutil.copy(f'{HERE}/stemfire.py', f'{KIT}/stemfire.py'); files.append('stemfire.py')
+    print(f"  fire: {F['name']}, {F['lufs']:.1f} LUFS as made; stems from Drive / {F['drive_folder']}")
 if any(m.get('mark') for m in mixes.values()):
     shutil.copy(f'{REPO}/channel/somewhere-sheltered-mark.png', f'{KIT}/mark.png'); kit['mark'] = 'mark.png'; files.append('mark.png')
 kit['files'] = files

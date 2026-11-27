@@ -74,6 +74,17 @@ crackle gets `density` (more small crackle, the same loud pops, so the picture's
 ceiling that lets the crackle be loud without spiking. Add `&mute=wind,fire,clock` to the page to render any part alone;
 for the stationmaster the fire alone measures about 6 dB louder than the storm alone.
 
+### The fire: myNoise, Warm and Cosy
+
+The stationmaster's fire is myNoise's Fireplace generator on its Warm and Cosy setting, used with the owner's permission
+(`mix.fire` in scene.json). `tools/stemfire.py` plays it the way the website does: each band's two recorded stems take turns
+on their own period, at level cubed, so it never comes round the same; the video starts 700 s into it, where every stem is
+already playing and the fire is steady. It sits `over_storm_db` (6 dB) above the blizzard, which is rendered without any
+fire of its own (`&mute=fire`). The stems are not in this repository: they are in Google Drive (Cozy Scenes / fire-stems),
+`make-video.ipynb` copies them next to the build (`build.py --fire-dir`), and `make-kit.py` reads a local copy from
+`work/<scene>/fire-stems/` only to measure the fire's loudness. The ambience type plays at -16.5 LUFS, a little under
+YouTube's -14: a fire's crackle is all peaks, and pushing it to -14 would flatten them.
+
 ### Sound that does not repeat
 
 The weather loop is three minutes, but its sound is made in several **takes** (`scene.html?...&take=<n>`): the same storm,

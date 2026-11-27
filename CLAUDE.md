@@ -11,5 +11,8 @@
   "Somewhere Sheltered" mark is hidden in the scene, slightly see-through (there, a maker's mark on the suitcase), never laid
   over the corner. Thumbnails never cover the hero detail (the hot chocolate). The effort goes into the setting, the title and the soundscape: a
   detailed, immersive place, a title that names it, and sounds that belong to that place and vary over the whole video.
+- The fire is myNoise's Fireplace on its Warm and Cosy setting, used with the owner's permission. Its sound files never go
+  into this repository (it is public): they live in the channel's Google Drive (Cozy Scenes / fire-stems) and the build
+  reads them from there. Descriptions credit it: "Fireplace sound: myNoise.net, used with permission."
 - Lo-fi music is made with ACE-Step 1.5 (MIT; `fox-scenes/make-music.ipynb`). Free plans of other music generators forbid
   commercial use.

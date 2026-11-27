@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Checks a built fox-scene video: the opening, the joins between parts, and the sound level. Prints pass or FAIL per line.
 
-Usage: check-video.py <video.mp4> [--loop 180] [--open 0]
+Usage: check-video.py <video.mp4> [--loop 180] [--open 0] [--lufs -14]
   --open N  the video starts with an opening part N seconds long (the snow blowing clear) that is cut onto the first loop
   opening   the first frame is a full picture (not black) and the first second of sound is at full level
   joins     at each place two parts meet (each time the loop comes round) the picture changes no more
@@ -15,6 +15,7 @@ import numpy as np
 path = sys.argv[1]
 LOOP = int(sys.argv[sys.argv.index('--loop') + 1]) if '--loop' in sys.argv else 180
 OPEN = int(sys.argv[sys.argv.index('--open') + 1]) if '--open' in sys.argv else 0      # seconds of the opening part, if the video has one
+TARGET = float(sys.argv[sys.argv.index('--lufs') + 1]) if '--lufs' in sys.argv else -14.0       # the type's loudness (ambience plays quieter)
 SR = 48000; W, H = 480, 270
 dur = float(subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', path], capture_output=True, text=True).stdout)
 ok = lambda c: 'pass' if c else 'FAIL'
@@ -62,4 +63,4 @@ for t, label in joins:
 
 log = subprocess.run(['ffmpeg', '-hide_banner', '-nostats', '-i', path, '-af', 'ebur128=peak=true', '-f', 'null', '-'], capture_output=True, text=True).stderr
 s = log[log.rindex('Summary:'):]; I = float(re.search(r'I:\s+(-?[\d.]+) LUFS', s).group(1)); pk = float(re.search(r'Peak:\s+(-?[\d.]+) dBFS', s).group(1)); lra = float(re.search(r'LRA:\s+([\d.]+) LU', s).group(1))
-print(f'  loudness: {I:.1f} LUFS {ok(-15.5 <= I <= -13)} | peak {pk:.1f} dBFS {ok(pk <= -1)} | quiet-to-loud range {lra:.1f} LU')
+print(f'  loudness: {I:.1f} LUFS (target {TARGET:g}) {ok(TARGET - 1.5 <= I <= TARGET + 1)} | peak {pk:.1f} dBFS {ok(pk <= -1)} | quiet-to-loud range {lra:.1f} LU')

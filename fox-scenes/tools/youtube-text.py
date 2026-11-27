@@ -47,7 +47,7 @@ for scene in sys.argv[1:]:
             f'What you will hear, for {hours.lower()}:', *('• ' + s for s in T['sounds']), '',
             T['good_for'], '',
             f'More places to shelter: {PLAYLIST}', '',
-            'Somewhere Sheltered. Bad weather. Safe inside.', '',
+            'Somewhere Sheltered. Bad weather. Safe inside.', '', *([*T['credits'], ''] if T.get('credits') else []),
             ' '.join(T['hashtags']), '',
             'TAGS', tags, '',
             'PINNED COMMENT', T['pinned'], '',
