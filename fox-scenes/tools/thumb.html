@@ -32,7 +32,7 @@ bg.style.backgroundImage = `url(${C.bg})`; bg.style.backgroundSize = `${1920 * s
 const [br, sa, co] = C.boost || [1, 1, 1]; bg.style.filter = `brightness(${br}) saturate(${sa}) contrast(${co})`;
 const lines = C.lines || [];
 if (!lines.length) { document.getElementById('title').remove(); document.getElementById('shade').remove(); }
-else { document.getElementById('l1').textContent = lines[0]; document.getElementById('l2').textContent = lines[1] || ''; document.getElementById('l2').style.color = C.accent; }
+else { document.getElementById('l1').textContent = lines[0]; document.getElementById('l2').textContent = lines[1] || ''; document.getElementById('l2').style.color = C.line2 || C.accent; }
 document.getElementById('badge').style.background = C.accent; document.getElementById('badge').textContent = C.badge;
 const kind = document.getElementById('kind'); if (C.kind) { kind.textContent = C.kind; kind.style.color = C.accent; kind.style.borderColor = C.accent; } else kind.remove();
 // keep the name inside the left 58% of the frame, whatever its length
@@ -42,8 +42,14 @@ const hits = el => { const r = el.getBoundingClientRect(); return keep.some(([x0
 const SHADE = { bl: '120px 720px', br: '1160px 720px', tr: '1160px 0px' };
 document.fonts.ready.then(() => {
   if (document.getElementById('title')) {
-    const w = t.getBoundingClientRect().width; if (w > max) t.style.fontSize = Math.floor(110 * max / w) + 'px';
-    const where = ['bl', 'br', 'tr'].find(p => { t.className = p; return !hits(t); });
+    const w = t.getBoundingClientRect().width, size = w > max ? Math.floor(110 * max / w) : 110;
+    const tags = document.getElementById('tags').getBoundingClientRect();
+    const clear = () => { const r = t.getBoundingClientRect(); return !hits(t) && !(r.left < tags.right && r.right > tags.left && r.top < tags.bottom && r.bottom > tags.top); };
+    let where = null;      /* bottom-left if it fits there (a little smaller if need be), else bottom-right, else top-right; never over the badges */
+    for (const p of ['bl', 'br', 'tr']) {
+      for (const f of [1, 0.92, 0.85, 0.78]) { t.className = p; t.style.fontSize = Math.floor(size * f) + 'px'; if (clear()) { where = p; break; } }
+      if (where) break;
+    }
     if (!where) document.body.dataset.blocked = 'the name';
     else { t.className = where; document.body.dataset.where = where;
       document.getElementById('shade').style.background = `radial-gradient(ellipse 900px 430px at ${SHADE[where]}, rgba(6, 5, 8, .93) 0%, rgba(6, 5, 8, .72) 45%, rgba(6, 5, 8, 0) 100%)`; }
