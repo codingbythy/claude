@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Assembles the long video from the parts in this folder. Copied into every scene's video-kit as build.py.
 
-Usage: build.py [output.mp4] [--type lofi|ambience] [--loops N] [--scale 4] [--music-dir folder]
+Usage: build.py [output.mp4] [--type lofi|ambience] [--loops N] [--scale 4] [--music-dir folder] [--fire-dir folder]
 With no --type it makes the scene's home type; with no --loops, the number of hours written in kit.json.
 lofi is music over the scene's own sounds; ambience is the scene's sounds only. Needs ffmpeg and numpy.
 
@@ -24,13 +24,14 @@ argv = sys.argv[1:]
 opt = lambda name, default: argv[argv.index(name) + 1] if name in argv else default
 args = [a for i, a in enumerate(argv) if not a.startswith('--') and (i == 0 or not argv[i - 1].startswith('--'))]
 music_dir = os.path.abspath(opt('--music-dir', '')) if '--music-dir' in argv else None
+fire_dir = os.path.abspath(opt('--fire-dir', '')) if '--fire-dir' in argv else None
 out = os.path.abspath(args[0]) if args else None
 os.chdir(HERE)
 K = json.load(open('kit.json'))
 kind = opt('--type', K['home'])
 if kind not in K['mixes']:
     sys.exit(f"This scene is not set up as {kind}; it has: {', '.join(K['mixes'])}")
-M = dict(K['mixes'][kind], target_lufs=K['target_lufs'])
+M = dict({'target_lufs': K['target_lufs']}, **K['mixes'][kind])          # a type can set its own loudness
 HOURS = M.get('hours', K['hours'])                                   # a type can have its own length (ambience runs all night)
 Y = dict(K['youtube'], **M.get('youtube', {}))                        # and its own encoding (a smaller file for the long ones)
 loops = int(opt('--loops', round(HOURS * 3600 / K['loop_seconds'])))
@@ -80,16 +81,16 @@ def encode(src, dst, start=0, seconds=None, fade_out=None, mark_from=None):
     run(cmd + (['-t', str(seconds)] if seconds else []) + V + [dst])
 
 
-print(f'Enlarging the loop to {W}x{H}...')
+print(f'Enlarging the picture to {W}x{H}...', flush=True)
 parts, plain = [], loops
 if P.get('open'):            # the opening, then the rest of the first loop: together exactly one loop long
-    encode(P['open'], 'open.mp4', mark_from=(P.get('mark_at', 3.5), 2.5))
-    encode(P['loop'], 'first.mp4', start=P['open_seconds'])
+    print('  picture: the opening', flush=True); encode(P['open'], 'open.mp4', mark_from=(P.get('mark_at', 3.5), 2.5))
+    print('  picture: the rest of the first loop', flush=True); encode(P['loop'], 'first.mp4', start=P['open_seconds'])
     parts += ['open.mp4', 'first.mp4']; plain -= 1
 if plain:
-    encode(P['loop'], 'loop.mp4')
+    print('  picture: the three-minute loop', flush=True); encode(P['loop'], 'loop.mp4')
     parts += ['loop.mp4'] * plain
-encode(P['loop'], 'outro.mp4', seconds=OUTRO, fade_out=(OUTRO - 10, 10))
+print('  picture: the ending', flush=True); encode(P['loop'], 'outro.mp4', seconds=OUTRO, fade_out=(OUTRO - 10, 10))
 parts.append('outro.mp4')
 
 
@@ -107,9 +108,23 @@ def weather():
         order += block
     k = np.linspace(0, 1, lead, dtype=np.float32)[:, None]; down, up = np.cos(k * np.pi / 2), np.sin(k * np.pi / 2)
     pcm = lambda x: (np.clip(x, -1, 1) * 32767).astype('<i2').tobytes()
+    F = K.get('fire')
+    if F:                                  # the fire, made from its stems for the whole length, a set distance above the storm
+        if not fire_dir or not os.path.isdir(fire_dir):
+            sys.exit(f"This scene's fire needs its sound files: run with --fire-dir <folder> holding {', '.join(b[s] + '.ogg' for b in F['bands'] for s in 'ab')}")
+        from stemfire import StemFire
+        fire = StemFire(F, fire_dir); gf = 10 ** ((K['ambience_lufs'] + F['over_storm_db'] - F['lufs']) / 20)
+        bed = 10 * math.log10(10 ** (K['ambience_lufs'] / 10) + 10 ** ((K['ambience_lufs'] + F['over_storm_db']) / 10))
+        gb = 10 ** ((K['ambience_lufs'] - bed) / 20)                     # storm and fire together kept at the usual level
+    pos = 0
     for i in range(loops + 1):                                           # one more than the loops: the ending plays the start of the next
+        if i % 10 == 0:
+            print(f'  sound: {i * LOOP // 60} of {loops * LOOP // 60} minutes made', flush=True)
         a, b = takes[order[i]], takes[order[i + 1]]
-        yield pcm(a[lead:L]); yield pcm(a[L:L + lead] * down + b[:lead] * up)
+        for piece in (a[lead:L], a[L:L + lead] * down + b[:lead] * up):
+            if F:
+                piece = (piece + gf * fire.render(pos + int(F.get('offset', 600) * SR), len(piece))) * gb      # start well in, with every stem already playing
+            pos += len(piece); yield pcm(piece)
 
 
 def playlist(folder, seconds, dst):
@@ -151,8 +166,11 @@ def playlist(folder, seconds, dst):
 # The ceiling: a gentle roll-off above 12 kHz, then a limiter working at four times the sample rate, so the sharp edges of
 # crackles cannot overshoot between samples or in the AAC encoding (true peaks stay under -1 dBFS). A fire-led mix loses a
 # little loudness to the limiter; "makeup_db" in the type's mix settings gives it back.
-tail = (f"lowpass=f=12000,lowpass=f=14000,aresample=192000,alimiter=limit=0.7:level=disabled:release=100,aresample=48000,"
+C = dict({'top_hz': 12000, 'attack': 5, 'release': 100}, **M.get('ceiling', {}))      # a recorded fire needs less taming than a made one
+top = f"lowpass=f={C['top_hz']}," + (f"lowpass=f={C['top_hz'] + 2000}," if C['top_hz'] < 16000 else '')
+tail = (f"{top}aresample=192000,alimiter=limit=0.7:level=disabled:attack={C['attack']}:release={C['release']},aresample=48000,"
         f"afade=out:st={total - 14}:d=14[a]")
+lowcut = 'highpass=f=40,' if K.get('fire') else ''                     # nothing below 40 Hz: inaudible on most speakers
 up = M.get('makeup_db', 0)
 takes = K.get('takes')
 inputs = ['-f', 's16le', '-ar', str(SR), '-ac', '2', '-i', '-'] if takes else ['-stream_loop', '-1', '-i', 'ambience.flac']
@@ -169,12 +187,12 @@ if music or (music_dir and kind == 'lofi'):
     mus = loudness('music.wav', eq)
     amb_level = -20 + M['ambience_vs_music_db']                                      # the weather sits this far under the music
     both = 10 * math.log10(10 ** (-20 / 10) + 10 ** (amb_level / 10))                # the two together
-    graph = (f"[0:a]volume={amb_level - K['ambience_lufs']:.2f}dB[amb];[1:a]aresample=48000,{eq}volume={-20 - mus:.2f}dB[mus];"
+    graph = (f"[0:a]{lowcut}volume={amb_level - K['ambience_lufs']:.2f}dB[amb];[1:a]aresample=48000,{eq}volume={-20 - mus:.2f}dB[mus];"
              f"[amb][mus]amix=inputs=2:normalize=0,volume={M['target_lufs'] - both + up:.2f}dB,{tail}")
     inputs += ['-i', 'music.wav']
 else:
-    graph = f"[0:a]volume={M['target_lufs'] - K['ambience_lufs'] + up:.2f}dB,{tail}"
-print('Mixing the sound...')
+    graph = f"[0:a]{lowcut}volume={M['target_lufs'] - K['ambience_lufs'] + up:.2f}dB,{tail}"
+print('Mixing the sound...', flush=True)
 mix = ff + inputs + ['-filter_complex', graph, '-map', '[a]', '-t', str(total), '-c:a', 'aac', '-b:a', Y['audio_bitrate'], '-ar', '48000', 'audio.m4a']
 if takes:
     p = subprocess.Popen(mix, stdin=subprocess.PIPE)
@@ -195,7 +213,7 @@ else:
 # 3. join
 with open('list.txt', 'w') as f:
     f.write(''.join(f'file {x}\n' for x in parts))
-print('Joining...')
+print('Joining...', flush=True)
 run(ff + ['-f', 'concat', '-safe', '0', '-i', 'list.txt', '-i', 'audio.m4a', '-map', '0:v', '-map', '1:a', '-c', 'copy', '-shortest', '-movflags', '+faststart', out])
 for f in ('list.txt', 'audio.m4a', 'music.wav', 'loop.mp4', 'outro.mp4', 'open.mp4', 'first.mp4'):
     if os.path.exists(f):

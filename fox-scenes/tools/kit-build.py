@@ -81,16 +81,16 @@ def encode(src, dst, start=0, seconds=None, fade_out=None, mark_from=None):
     run(cmd + (['-t', str(seconds)] if seconds else []) + V + [dst])
 
 
-print(f'Enlarging the loop to {W}x{H}...')
+print(f'Enlarging the picture to {W}x{H}...', flush=True)
 parts, plain = [], loops
 if P.get('open'):            # the opening, then the rest of the first loop: together exactly one loop long
-    encode(P['open'], 'open.mp4', mark_from=(P.get('mark_at', 3.5), 2.5))
-    encode(P['loop'], 'first.mp4', start=P['open_seconds'])
+    print('  picture: the opening', flush=True); encode(P['open'], 'open.mp4', mark_from=(P.get('mark_at', 3.5), 2.5))
+    print('  picture: the rest of the first loop', flush=True); encode(P['loop'], 'first.mp4', start=P['open_seconds'])
     parts += ['open.mp4', 'first.mp4']; plain -= 1
 if plain:
-    encode(P['loop'], 'loop.mp4')
+    print('  picture: the three-minute loop', flush=True); encode(P['loop'], 'loop.mp4')
     parts += ['loop.mp4'] * plain
-encode(P['loop'], 'outro.mp4', seconds=OUTRO, fade_out=(OUTRO - 10, 10))
+print('  picture: the ending', flush=True); encode(P['loop'], 'outro.mp4', seconds=OUTRO, fade_out=(OUTRO - 10, 10))
 parts.append('outro.mp4')
 
 
@@ -118,6 +118,8 @@ def weather():
         gb = 10 ** ((K['ambience_lufs'] - bed) / 20)                     # storm and fire together kept at the usual level
     pos = 0
     for i in range(loops + 1):                                           # one more than the loops: the ending plays the start of the next
+        if i % 10 == 0:
+            print(f'  sound: {i * LOOP // 60} of {loops * LOOP // 60} minutes made', flush=True)
         a, b = takes[order[i]], takes[order[i + 1]]
         for piece in (a[lead:L], a[L:L + lead] * down + b[:lead] * up):
             if F:
@@ -190,7 +192,7 @@ if music or (music_dir and kind == 'lofi'):
     inputs += ['-i', 'music.wav']
 else:
     graph = f"[0:a]{lowcut}volume={M['target_lufs'] - K['ambience_lufs'] + up:.2f}dB,{tail}"
-print('Mixing the sound...')
+print('Mixing the sound...', flush=True)
 mix = ff + inputs + ['-filter_complex', graph, '-map', '[a]', '-t', str(total), '-c:a', 'aac', '-b:a', Y['audio_bitrate'], '-ar', '48000', 'audio.m4a']
 if takes:
     p = subprocess.Popen(mix, stdin=subprocess.PIPE)
@@ -211,7 +213,7 @@ else:
 # 3. join
 with open('list.txt', 'w') as f:
     f.write(''.join(f'file {x}\n' for x in parts))
-print('Joining...')
+print('Joining...', flush=True)
 run(ff + ['-f', 'concat', '-safe', '0', '-i', 'list.txt', '-i', 'audio.m4a', '-map', '0:v', '-map', '1:a', '-c', 'copy', '-shortest', '-movflags', '+faststart', out])
 for f in ('list.txt', 'audio.m4a', 'music.wav', 'loop.mp4', 'outro.mp4', 'open.mp4', 'first.mp4'):
     if os.path.exists(f):
