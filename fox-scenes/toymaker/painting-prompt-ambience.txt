@@ -1,0 +1,21 @@
+Attach: fox-scenes/toymaker/painting-1280.png (the toymaker's workshop as it is now, with the two foxes).
+
+Repaint the attached picture as the same toymaker's workshop on Christmas Eve, empty and waiting, while a blizzard blows outside. Keep its detailed pixel-art style exactly: crisp visible pixels, dithered shading, soft outlines, the same level of detail, warm firelight and fairy lights set against a deep blue snowy night. Keep the room recognisably the same: the shelves of wooden toys, the decorated Christmas tree with its lights, the rocking horse, the stockings over the fireplace, the window onto the snowy village.
+
+Changes:
+
+1. No foxes and no animals. Where they slept there is now one deep, soft armchair for one person, turned towards the fire, piled with a red knitted blanket, a plump tartan cushion and a cream cable-knit cushion, with a low footstool in front of it.
+
+2. The fire is the heart of the picture: a big stone fireplace on the right, burning brightly with logs and glowing embers, its warm light spilling across the floor, the armchair and the tree.
+
+3. A bigger window on the left, filling the left half of the picture from just below the ceiling to a low sill, divided into tall panes, looking out on the snowed-in village with lit windows and deep drifts. Snow is heaped on the outside sill and frost creeps into the lower corners of the panes.
+
+4. Hot chocolate as the hero detail: beside the armchair, on a small round wooden side table in the lower middle of the picture, just right of the centre line, one large mug of hot chocolate with whipped cream and marshmallows and a candy cane, lit warmly by the fire, big enough to read instantly when the picture is small.
+
+5. In the bottom-right corner, a wooden toy crate with "Somewhere Sheltered" branded into the wood in a small, elegant serif, tone-on-tone, as if it were the workshop's maker's mark: subtle, not a sign.
+
+6. Keep the bottom-left corner calm, just floorboards and the edge of a rug, and the top-left corner as dark stormy sky seen through the window. Nothing important in either corner.
+
+Important, because the falling snow, the steam and the flames' flicker will be animated separately: do not draw any falling snowflakes or streaks in the air, and no steam or smoke. Show snow only where it has settled. Do draw the firelight, the fairy lights and the glow of the village windows.
+
+No people and no animals. No other text, letters, numbers or signs anywhere. No border, no watermark. Wide 16:9 landscape.
